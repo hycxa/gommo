@@ -25,3 +25,4 @@ _testmain.go
 doc/TDD_*.html
 
 *.exe
+.DS_Store
