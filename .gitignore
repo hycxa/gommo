@@ -22,5 +22,6 @@ _cgo_gotypes.go
 _cgo_export.*
 
 _testmain.go
+doc/TDD_*.html
 
 *.exe
