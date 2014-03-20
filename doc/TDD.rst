@@ -21,12 +21,12 @@ golang分布式服务器框架
 
 参考erlang语言并发模型，基于消息机制。
 
-整个框架包含以下几个层次，包含关系为Server->Routine->FSM：
+整个框架包含以下几个层次，包含关系为Node->Routine->FSM：
 
-Server
+Node
 ======
 
-一个Server对应一个操作系统进程，主要作用为从网络层接收消息并启动Routine，包括以下几类：
+一个Node对应一个操作系统进程，主要作用为从网络层接收消息并启动Routine，包括以下几类：
 
 Gate
 	和Client直接连接，每个Client一个Routine接收消息，过滤，转发给App服务器。Gate上还有若干种Org用于消息转发或广播。
@@ -37,13 +37,13 @@ App
 Routine
 =======
 
-一个Routine对应一个Processer，有以下几类：
+一个Routine对应一个Node，有以下几类：
 
 Person
-	直接对应一个Client，所有的合法消息先到这里来处理，然后再回复或者转发给其他Processer。
+	直接对应一个Client，所有的合法消息先到这里来处理，然后再回复或者转发给其他Node。
 
 Org
-	对应一组Client，用于广播消息，处理组织类消息（例如公会）。
+	对应一组Client，用于广播消息，处理组织类消息（例如公会、队伍、战斗）。
 
 FSM
 ===
@@ -83,7 +83,7 @@ Message
 	* Sender调用Notify接口：
 	.. code:: golang
 
-		func Notify(sender Notifier, receiver Processer, m Message) (ok bool) {
+		func Notify(sender Notifier, receiver Node, m Message) (ok bool) {
 			return true
 		}
 
