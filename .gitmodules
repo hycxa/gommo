@@ -1,9 +1,0 @@
-[submodule "src/ext"]
-	path = src/ext
-	url = git@github.com:zfbp/ext
-[submodule "src/god"]
-	path = src/god
-	url = git@github.com:zfbp/god
-[submodule "src/game"]
-	path = src/game
-	url = git@github.com:zfbp/game
