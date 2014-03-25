@@ -1,0 +1,4 @@
+goext
+=====
+
+golang little extension
