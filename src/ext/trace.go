@@ -68,7 +68,7 @@ func Errorf(format string, v ...interface{}) {
 	if el == nil {
 		el = log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 	}
-	el.Panicf(format, v...)
+	//el.Panicf(format, v...)
 }
 
 func Error(err error) error {

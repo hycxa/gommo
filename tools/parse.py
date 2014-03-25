@@ -5,7 +5,7 @@
 协议生成工具
 """
 
-import sys, os
+import sys, os, re
 from random import random
 
 def random_shuffle(beginNum, endNum):
@@ -40,9 +40,9 @@ class Packet(object):
     #结构体自动首字母大写
     def __init__(self, n, d, p):
         self.typeid = getOnePacketID()
-        self.name = n.upper()
+        self.name = n
         self.desc = d
-        self.payload = p[:1].upper() + p[1:]
+        self.payload = p
         self.check()
     def __repr__(self):
         return "\nAPI typeid: %s \nname: %s desc: %s payload: %s\n" %\
@@ -59,31 +59,41 @@ def new_packet(packet_list, packet_name, packet_desc, packet_payload):
     packet = Packet(packet_name, packet_desc, packet_payload)
     packet_list.append(packet)
 
+def getOneLineStructName(line):
+    nameTab = re.findall(r"type\s+(\S+)\s+struct\s+{", line)
+    if len(nameTab) >= 1:
+        return nameTab[0]
+    else:
+        return None
+
 def parse_packet(packet_buf):
     L = [line.strip() for line in packet_buf.split('\n')]
     L = [line for line in L if line and line[0] != '#']
     packet_list = []
 
     start_packet = False
+    curStructName = None
     packet_name = None
     packet_desc = None
-    packet_payload = None
     for line in L:
         idx = line.find(':')
-        if idx < 0: continue
+        if idx < 0:
+            structName = getOneLineStructName(line)
+            if structName is not None:
+                curStructName = structName
+            continue
+
         if line[:idx] == 'name':
             if start_packet:
-                new_packet(packet_list, packet_name, packet_desc, packet_payload)
-                packet_name = packet_desc = packet_payload = None
+                new_packet(packet_list, packet_name, packet_desc, curStructName)
+                packet_name = packet_desc = None
             start_packet = True
             packet_name = line[idx+1:]
-        elif line[:idx] == 'payload':
-            packet_payload = line[idx+1:]
         elif line[:idx] == 'desc':
             packet_desc = line[idx+1:]
 
     if packet_name is not None:
-        new_packet(packet_list, packet_name, packet_desc, packet_payload)
+        new_packet(packet_list, packet_name, packet_desc, curStructName)
     return packet_list
 
 def gen_go_packet(packet_list):
@@ -95,7 +105,43 @@ const (
         f.write("\t%s = %d\n" %(item.name, item.typeid))
     f.write(")\n")
     f.close()
-    
+
+    decodef = open(os.path.join('./', 'packet_decode.go'), 'w')
+    decodef.write("""package proto \n\n
+import (
+    "god"
+    "bytes"
+    "encoding/gob"
+    "errors"
+    "ext"
+)\n
+func checkErr(err error) {
+	if err != nil {
+        ext.Error(err) 
+	}
+}\n
+func EncodeMsg(msg *Message) (bool, bytes.Buffer) {
+    var buff bytes.Buffer
+	enc := gob.NewEncoder(&buff)
+	err := enc.Encode(msg.Sender.Sum(nil))
+	if err != nil {
+	    checkErr(err)	
+        return false, nil
+	}
+    err = enc.Encode(msg.PackID)
+    if err != nil {
+        checkErr(err)
+        return false, nil
+    }
+    switch msg.PackID {	
+            """)
+    for item in packet_list:
+        decodef.write("case %s:\nerr = enc.Encode(%s(msg.data))\n" %(item.name, item.payload))
+    decodef.write("""default:
+    return false, nil
+}
+return true, buff
+}""")
 
 def parse(packet_buf):
     packet_list = parse_packet(packet_buf)
@@ -109,7 +155,7 @@ if __name__ == '__main__':
 
     path_pre = sys.argv[1]
     try:
-        packet_buf = open(os.path.join(path_pre, 'packet.txt'), 'r').read()
+        packet_buf = open(os.path.join(path_pre, 'packet_struct.go'), 'r').read()
     except IOError, e:
         print 'Open proto file failed:', e
         sys.exit(0)
