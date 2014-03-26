@@ -56,8 +56,9 @@ class Packet(object):
             self.desc = ''
 
 def new_packet(packet_list, packet_name, packet_desc, packet_payload):
-    packet = Packet(packet_name, packet_desc, packet_payload)
-    packet_list.append(packet)
+    if packet_name is not None and packet_payload is not None:
+        packet = Packet(packet_name, packet_desc, packet_payload)
+        packet_list.append(packet)
 
 def getOneLineStructName(line):
     nameTab = re.findall(r"type\s+(\S+)\s+struct\s+{", line)
@@ -80,6 +81,8 @@ def parse_packet(packet_buf):
         if idx < 0:
             structName = getOneLineStructName(line)
             if structName is not None:
+                new_packet(packet_list, packet_name, packet_desc, curStructName)
+                packet_name = packet_desc = None
                 curStructName = structName
             continue
 
@@ -92,56 +95,92 @@ def parse_packet(packet_buf):
         elif line[:idx] == 'desc':
             packet_desc = line[idx+1:]
 
-    if packet_name is not None:
-        new_packet(packet_list, packet_name, packet_desc, curStructName)
+    new_packet(packet_list, packet_name, packet_desc, curStructName)
+    packet_name = packet_desc = None
     return packet_list
 
 def gen_go_packet(packet_list):
+    #协议名定义生成
     f = open(os.path.join('./', 'packet_name.go'), 'w')
     f.write("""package proto\n\n
-const (
+        const (
     """)
     for item in packet_list:
         f.write("\t%s = %d\n" %(item.name, item.typeid))
     f.write(")\n")
     f.close()
 
+    #协议解析及编码生成
     decodef = open(os.path.join('./', 'packet_decode.go'), 'w')
     decodef.write("""package proto \n\n
-import (
-    "god"
-    "bytes"
-    "encoding/gob"
-    "errors"
-    "ext"
-)\n
-func checkErr(err error) {
-	if err != nil {
-        ext.Error(err) 
-	}
-}\n
-func EncodeMsg(msg *Message) (bool, bytes.Buffer) {
-    var buff bytes.Buffer
-	enc := gob.NewEncoder(&buff)
-	err := enc.Encode(msg.Sender.Sum(nil))
-	if err != nil {
-	    checkErr(err)	
-        return false, nil
-	}
-    err = enc.Encode(msg.PackID)
-    if err != nil {
-        checkErr(err)
-        return false, nil
-    }
-    switch msg.PackID {	
-            """)
+        import (
+        "god"
+        "bytes"
+        "encoding/gob"
+        "errors"
+        "ext"
+        )\n
+        func checkErr(err error) {
+	        if err != nil {
+                ext.Error(err) 
+	        }
+        }\n
+        func EncodeMsg(msg *Message) (bool, bytes.Buffer) {
+            var buff bytes.Buffer
+	        enc := gob.NewEncoder(&buff)
+        	err := enc.Encode(msg.Sender)
+	        if err != nil {
+	            checkErr(err)	
+                return false, nil
+	        }
+            err = enc.Encode(msg.PackID)
+            if err != nil {
+                checkErr(err)
+                return false, nil
+            }
+            switch msg.PackID {\n""")
     for item in packet_list:
         decodef.write("case %s:\nerr = enc.Encode(%s(msg.data))\n" %(item.name, item.payload))
     decodef.write("""default:
-    return false, nil
-}
-return true, buff
-}""")
+        return false, nil
+        }
+        return true, buff
+        }\n""")
+
+    #协议解码生成
+    decodef.write("""
+        func DecodeMsg(buff *bytes.Buffer) (bool, Message) {
+           msg := Message{}
+           dec := gob.NewDecoder(buff)
+           err := dec.Decode(&(msg.Sender))
+           if err != nil {
+                checkErr(err)
+                return false, nil
+           }
+           err = dec.Decode(&(msg.PackID))
+           if err != nil {
+                checkErr(err)
+                return false, nil
+           }
+           switch msg.PackID {
+                  """)
+    for item in packet_list:
+        decodef.write("case %s:\nerr = dec.Decode(&%s(msg.data))\n" %(item.name, item.payload))
+    decodef.write("""default:
+                  return false, nil
+              }
+                return true, msg
+            }\n""")
+
+    #创建协议函数
+    decodef.write("""func CreatePacketByPackID( packID PacketID) (PacketID, interface{}){
+                 switch packID {\n""")
+    for item in packet_list:
+        decodef.write("case %s:\n return packID, %s{}\n" %(item.name, item.payload))
+    decodef.write("""default:
+                  return nil, nil
+              }
+                  }\n""")
 
 def parse(packet_buf):
     packet_list = parse_packet(packet_buf)

@@ -1,8 +1,8 @@
 package proto
 
 const (
-	XX1 = 58989
-	XX2 = 1001
-	XX3 = 7836
-	XX4 = 1003
+	XX1 = 78822
+	XX2 = 82622
+	XX3 = 49759
+	XX4 = 72282
 )
