@@ -36,8 +36,6 @@ def getOnePacketID():
     return retID
 
 class Packet(object):
-    # name 自动全部大写
-    #结构体自动首字母大写
     def __init__(self, n, d, p):
         self.typeid = getOnePacketID()
         self.name = n
@@ -114,42 +112,39 @@ def gen_go_packet(packet_list):
     decodef = open(os.path.join('./', 'packet_decode.go'), 'w')
     decodef.write("""package proto \n\n
         import (
-        "god"
         "bytes"
         "encoding/gob"
-        "errors"
-        "ext"
-        )\n
-        func checkErr(err error) {
-	        if err != nil {
-                ext.Error(err) 
-	        }
-        }\n
-        func EncodeMsg(msg *Message) (bool, bytes.Buffer) {
-            var buff bytes.Buffer
-	        enc := gob.NewEncoder(&buff)
+        )\n\n
+        func EncodeMsg(buff * bytes.Buffer, msg *Message) bool {
+	        enc := gob.NewEncoder(buff)
         	err := enc.Encode(msg.Sender)
 	        if err != nil {
 	            checkErr(err)	
-                return false, nil
+                return false
 	        }
             err = enc.Encode(msg.PackID)
             if err != nil {
                 checkErr(err)
-                return false, nil
+                return false
             }
             switch msg.PackID {\n""")
+
     for item in packet_list:
-        decodef.write("case %s:\nerr = enc.Encode(%s(msg.data))\n" %(item.name, item.payload))
+        decodef.write("case %s:\nerr = enc.Encode(msg.Data.(%s))\n" %(item.name, item.payload))
+
     decodef.write("""default:
-        return false, nil
-        }
-        return true, buff
+                return false
+            }
+            if err != nil {
+                checkErr(err)
+                return false
+            }
+            return true
         }\n""")
 
     #协议解码生成
     decodef.write("""
-        func DecodeMsg(buff *bytes.Buffer) (bool, Message) {
+        func DecodeMsg(buff *bytes.Buffer) (bool, *Message) {
            msg := Message{}
            dec := gob.NewDecoder(buff)
            err := dec.Decode(&(msg.Sender))
@@ -165,22 +160,16 @@ def gen_go_packet(packet_list):
            switch msg.PackID {
                   """)
     for item in packet_list:
-        decodef.write("case %s:\nerr = dec.Decode(&%s(msg.data))\n" %(item.name, item.payload))
+        decodef.write("case %s:\nvar data %s\nerr = dec.Decode(&data)\nmsg.Data = data\n" %(item.name, item.payload))
     decodef.write("""default:
                   return false, nil
               }
-                return true, msg
-            }\n""")
-
-    #创建协议函数
-    decodef.write("""func CreatePacketByPackID( packID PacketID) (PacketID, interface{}){
-                 switch packID {\n""")
-    for item in packet_list:
-        decodef.write("case %s:\n return packID, %s{}\n" %(item.name, item.payload))
-    decodef.write("""default:
-                  return nil, nil
+              if err != nil {
+                    checkErr(err)
+                    return false, nil
               }
-                  }\n""")
+                return true, &msg
+            }\n\n""")
 
 def parse(packet_buf):
     packet_list = parse_packet(packet_buf)

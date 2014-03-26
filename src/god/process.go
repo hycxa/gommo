@@ -1,27 +1,25 @@
 package god
 
 import (
-	// "bytes"
-	"crypto/sha1"
-	// "encoding/gob"
 	"ext"
 	"fmt"
+	"proto"
 )
 
-var objects = make(map[UUID]*Process)
+var objects = make(map[proto.UUID]*Process)
 
 type Process struct {
-	UUID
 	Handler
-	mq   chan Message
+	UUID proto.UUID
+	mq   chan proto.Message
 	quit chan int
 }
 
 func NewProcess(h Handler) *Process {
 	o := new(Process)
-	o.UUID = UUID{sha1.New()}
+	o.UUID.New()
 	o.Handler = h
-	o.mq = make(chan Message)
+	o.mq = make(chan proto.Message)
 	o.quit = make(chan int)
 
 	objects[o.UUID] = o
@@ -29,13 +27,13 @@ func NewProcess(h Handler) *Process {
 	return o
 }
 
-func Notify(source UUID, target UUID, packetID PacketID, data interface{}) error {
+func Notify(source proto.UUID, target proto.UUID, packetID proto.PacketID, data interface{}) error {
 	defer ext.UT(ext.T("NOTIFY"))
 	t, ok := objects[target]
 	if !ok {
 		return fmt.Errorf("Target %v is not found!", target)
 	}
-	m := Message{Sender: source, Data: data, PackID:packetID}
+	m := proto.Message{Sender: source, Data: data, PackID: packetID}
 	t.mq <- m
 	return nil
 }

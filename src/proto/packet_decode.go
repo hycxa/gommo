@@ -3,46 +3,40 @@ package proto
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
-	"ext"
-	"god"
 )
 
-func checkErr(err error) {
-	if err != nil {
-		ext.Error(err)
-	}
-}
-
-func EncodeMsg(msg *Message) (bool, bytes.Buffer) {
-	var buff bytes.Buffer
-	enc := gob.NewEncoder(&buff)
+func EncodeMsg(buff *bytes.Buffer, msg *Message) bool {
+	enc := gob.NewEncoder(buff)
 	err := enc.Encode(msg.Sender)
 	if err != nil {
 		checkErr(err)
-		return false, nil
+		return false
 	}
 	err = enc.Encode(msg.PackID)
 	if err != nil {
 		checkErr(err)
-		return false, nil
+		return false
 	}
 	switch msg.PackID {
 	case XX1:
-		err = enc.Encode(Teq(msg.data))
+		err = enc.Encode(msg.Data.(Teq))
 	case XX2:
-		err = enc.Encode(Teq(msg.data))
+		err = enc.Encode(msg.Data.(Teq))
 	case XX3:
-		err = enc.Encode(Teq2(msg.data))
+		err = enc.Encode(msg.Data.(Teq2))
 	case XX4:
-		err = enc.Encode(Teq3(msg.data))
+		err = enc.Encode(msg.Data.(Teq3))
 	default:
-		return false, nil
+		return false
 	}
-	return true, buff
+	if err != nil {
+		checkErr(err)
+		return false
+	}
+	return true
 }
 
-func DecodeMsg(buff *bytes.Buffer) (bool, Message) {
+func DecodeMsg(buff *bytes.Buffer) (bool, *Message) {
 	msg := Message{}
 	dec := gob.NewDecoder(buff)
 	err := dec.Decode(&(msg.Sender))
@@ -57,29 +51,27 @@ func DecodeMsg(buff *bytes.Buffer) (bool, Message) {
 	}
 	switch msg.PackID {
 	case XX1:
-		err = dec.Decode(&Teq(msg.data))
+		var data Teq
+		err = dec.Decode(&data)
+		msg.Data = data
 	case XX2:
-		err = dec.Decode(&Teq(msg.data))
+		var data Teq
+		err = dec.Decode(&data)
+		msg.Data = data
 	case XX3:
-		err = dec.Decode(&Teq2(msg.data))
+		var data Teq2
+		err = dec.Decode(&data)
+		msg.Data = data
 	case XX4:
-		err = dec.Decode(&Teq3(msg.data))
+		var data Teq3
+		err = dec.Decode(&data)
+		msg.Data = data
 	default:
 		return false, nil
 	}
-	return true, msg
-}
-func CreatePacketByPackID(packID PacketID) (PacketID, interface{}) {
-	switch packID {
-	case XX1:
-		return packID, Teq{}
-	case XX2:
-		return packID, Teq{}
-	case XX3:
-		return packID, Teq2{}
-	case XX4:
-		return packID, Teq3{}
-	default:
-		return nil, nil
+	if err != nil {
+		checkErr(err)
+		return false, nil
 	}
+	return true, &msg
 }

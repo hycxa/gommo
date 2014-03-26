@@ -1,7 +1,8 @@
 package god
 
 import (
-// "encoding"
+	// "encoding"
+	"proto"
 )
 
 type Marshaler interface {
@@ -10,15 +11,7 @@ type Marshaler interface {
 }
 
 type Handler interface {
-	Handle(packID PacketID, data Marshaler) (retID PacketID, ret Marshaler, err error)
-}
-
-type PacketID int64
-
-type Message struct {
-	Sender UUID
-	Data   interface{}
-	PackID PacketID
+	Handle(packID proto.PacketID, data Marshaler) (retID proto.PacketID, ret Marshaler, err error)
 }
 
 // func (m Marshaler) MarshalBinary() ([]byte, error) {

@@ -1,12 +1,9 @@
 package god
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"encoding/gob"
 	"errors"
 	"ext"
-	"fmt"
+	"proto"
 	"testing"
 )
 
@@ -34,7 +31,7 @@ func new_process(name string) *process {
 	return p
 }
 
-func Handle(id PacketID, m Marshaler) (retID PacketID, ret Marshaler, err error) {
+func Handle(id proto.PacketID, m Marshaler) (retID proto.PacketID, ret Marshaler, err error) {
 	switch m := m.(type) {
 	case tv:
 		v := tv(m)
@@ -44,7 +41,7 @@ func Handle(id PacketID, m Marshaler) (retID PacketID, ret Marshaler, err error)
 	return 0, nil, errors.New("wrong type")
 }
 
-func (p *process) Handle(id PacketID, m Marshaler) (retID PacketID, ret Marshaler, err error) {
+func (p *process) Handle(id proto.PacketID, m Marshaler) (retID proto.PacketID, ret Marshaler, err error) {
 	defer ext.UT(ext.T("process::Handle"))
 	ext.Debugf("P[%s]%#v\n", p.Name, m)
 	return Handle(id, m)
@@ -59,61 +56,9 @@ func TestProcess(t *testing.T) {
 	p2 := new_process("p2")
 
 	for i := 0; i < 1; i++ {
-		Notify(p1.UUID, p2.UUID, PacketID(i), tv{i})
+		Notify(p1.UUID, p2.UUID, proto.PacketID(i), tv{i})
 	}
 
 }
 
-type A struct {
-	Name string
-	Data int
-}
 
-type MA struct {
-	Data   interface{}
-	PackID PacketID
-}
-
-func TestEncode(t *testing.T) {
-	if testing.Short() {
-		return
-	}
-	uuid := UUID{sha1.New()}
-	_ = uuid
-	dataA := A{Name: "abc", Data: 7}
-
-	var buff bytes.Buffer
-	enc := gob.NewEncoder(&buff)
-	dec := gob.NewDecoder(&buff)
-
-	err := enc.Encode(1)
-	if err != nil {
-		fmt.Println("err enc", err)
-	}
-	err = enc.Encode(dataA)
-	if err != nil {
-		fmt.Println("err enc", err)
-	}
-
-	//err:=enc.Encode(Message{Sender: uuid, Data: dataA, PackID:1})
-	//err:=enc.Encode(MA{Data:dataA, PackID:1})
-
-	//var msg Message
-	//var msg MA
-
-	var packID PacketID
-	err = dec.Decode(&packID)
-	if err != nil {
-		fmt.Println("err dec")
-	}
-
-	if packID == 1 {
-		var msg A
-		err = dec.Decode(&msg)
-		if err != nil {
-			fmt.Println("err dec")
-		}
-		fmt.Println("result is:", msg)
-	}
-
-}
