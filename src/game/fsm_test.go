@@ -1,4 +1,4 @@
-package gogame
+package game
 
 import ()
 

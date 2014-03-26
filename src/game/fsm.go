@@ -1,5 +1,5 @@
 // state.go
-package gogame
+package game
 
 import ()
 

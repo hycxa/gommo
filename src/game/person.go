@@ -1,4 +1,4 @@
-package gogame
+package game
 
 import (
 	"god"
@@ -14,6 +14,6 @@ func NewPerson() *Person {
 	return p
 }
 
-func (p *Person) Handle(data god.Marshaler) (ret god.Marshaler, err error) {
-	return data, nil
+func (p *Person) Handle(pID god.PacketID, data god.Marshaler) (retID god.PacketID, ret god.Marshaler, err error) {
+	return pID, data, nil
 }
