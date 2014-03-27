@@ -2,6 +2,8 @@ package god
 
 import (
 	"testing"
+	"fmt"
+	"time"
 )
 
 func TestNewNode(t *testing.T) {
@@ -10,8 +12,11 @@ func TestNewNode(t *testing.T) {
 	n3 := NewNode("n3", "tcp", "127.0.0.1:2003")
 	n2.Dial("tcp", "127.0.0.1:2001")
 	n3.DialNode(n2)
+	n3.DialNode(n1)
+	time.Sleep(2000)
 
 	nodesOf1 := n1.Connected()
+	fmt.Println(nodesOf1)
 	if on2, ok := nodesOf1["n2"]; !ok || n2.Name != on2.Name {
 		t.Error("not found n2")
 	}
