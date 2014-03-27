@@ -2,6 +2,7 @@ package game
 
 import (
 	"god"
+	"proto"
 )
 
 type Person struct {
@@ -14,6 +15,6 @@ func NewPerson() *Person {
 	return p
 }
 
-func (p *Person) Handle(pID god.PacketID, data god.Marshaler) (retID god.PacketID, ret god.Marshaler, err error) {
+func (p *Person) Handle(pID proto.PacketID, data god.Marshaler) (retID proto.PacketID, ret god.Marshaler, err error) {
 	return pID, data, nil
 }
