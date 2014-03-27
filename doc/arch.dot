@@ -1,0 +1,15 @@
+graph G {
+	graph [label="The Architecture of golang distributed framework" fontsize=12];
+	node [colorscheme=rdbu11 fontsize=12];
+	edge [colorscheme=rdbu11 fontsize=12];
+	subgraph cluster1GS{
+		C1GS1;C1GS2
+	}
+
+	subgraph cluster1GS {
+		C2GS1;C2GS2
+	}
+
+	Gate1->cluster1GS
+	Gate2->cluster2GS
+}

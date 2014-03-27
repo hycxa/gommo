@@ -1,0 +1,3 @@
+import subprocess
+
+subprocess.call(["dot", "-Tpng", "arch.dot", "-o", "arch.png"])
