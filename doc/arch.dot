@@ -10,6 +10,6 @@ graph G {
 		C2GS1;C2GS2
 	}
 
-	Gate1->cluster1GS
-	Gate2->cluster2GS
+	//Gate1->cluster1GS
+	//Gate2->cluster2GS
 }

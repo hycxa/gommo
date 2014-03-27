@@ -1,3 +1,15 @@
-import subprocess
+import os
 
-subprocess.call(["dot", "-Tpng", "arch.dot", "-o", "arch.png"])
+env = Environment(ENV=os.environ)
+
+bld = Builder(action = 'dot -Tpng $SOURCE -o $TARGET',
+		suffix = '.png',
+		src_suffix = '.dot')
+env.Append(BUILDERS = {'Dot' : bld})
+
+files = env.Glob('*.dot')
+for filename in files:
+	env.Dot(filename)
+	pass
+
+

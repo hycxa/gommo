@@ -23,6 +23,7 @@ _cgo_export.*
 
 _testmain.go
 doc/TDD_*.html
+doc/*.png
 
 *.exe
 .DS_Store
