@@ -99,7 +99,7 @@ def parse_packet(packet_buf):
 
 def gen_go_packet(packet_list):
     #协议名定义生成
-    f = open(os.path.join('./', 'packet_name.go'), 'w')
+    f = open(os.path.join('./', 'name.go'), 'w')
     f.write("""package proto\n\n
         const (
     """)
@@ -109,7 +109,7 @@ def gen_go_packet(packet_list):
     f.close()
 
     #协议解析及编码生成
-    decodef = open(os.path.join('./', 'packet_decode.go'), 'w')
+    decodef = open(os.path.join('./', 'decode.go'), 'w')
     decodef.write("""package proto \n\n
         import (
         "bytes"
@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
     path_pre = sys.argv[1]
     try:
-        packet_buf = open(os.path.join(path_pre, 'packet_struct.go'), 'r').read()
+        packet_buf = open(os.path.join(path_pre, 'struct.go'), 'r').read()
     except IOError, e:
         print 'Open proto file failed:', e
         sys.exit(0)
