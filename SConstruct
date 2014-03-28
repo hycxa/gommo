@@ -1,1 +1,3 @@
-SConscript(['doc/SConscript'])
+SConscript(['doc/SConscript',
+	'src/SConscript'])
+
