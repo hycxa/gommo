@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"ext"
+	"hash"
 	"io"
 	"net"
 	"proto"
@@ -14,6 +15,8 @@ import (
 const (
 	TCP_TIMEOUT = 12000
 )
+
+type NodeID hash.Hash
 
 type NodeInfo struct {
 	Name    string
@@ -26,141 +29,119 @@ type RemoteNode struct {
 	net.Conn
 }
 
-type RemoteNodeMap map[string]RemoteNode
+type RemoteNodeMap map[string]*RemoteNode
 
 type Node struct {
 	NodeInfo
 	net.Listener
-	newConn   chan *RemoteNode
+	newRemote chan *RemoteNode
 	delConn   chan *string
 	connected RemoteNodeMap
 }
 
+var (
+	nodeTrace = ext.Trace(true)
+)
+
 func NewNode(name, network, address string) *Node {
 	var err error
-	n := new(Node)
-	n.Listener, err = net.Listen(network, address)
+	self := new(Node)
+	self.Listener, err = net.Listen(network, address)
 	if err != nil {
 		ext.Errorf(err.Error())
 		return nil
 	}
 
-	n.Name = name
-	n.NodeInfo.Network = n.Listener.Addr().Network()
-	n.NodeInfo.String = n.Listener.Addr().String()
-	n.newConn = make(chan *RemoteNode)
-	n.delConn = make(chan *string)
-	n.connected = make(map[string]RemoteNode)
-	go n.accept()
-	go n.updateConnect()
-	return n
+	self.Name = name
+	self.NodeInfo.Network = self.Listener.Addr().Network()
+	self.NodeInfo.String = self.Listener.Addr().String()
+	self.newRemote = make(chan *RemoteNode, 16)
+	self.delConn = make(chan *string, 16)
+	self.connected = make(map[string]*RemoteNode)
+	go self.accept()
+	go self.updateConnect()
+	return self
 }
 
-func SendConnMsg(conn net.Conn, b *bytes.Buffer) error {
-	v := b.Len()
-	buf := make([]byte, 2, 2+v)
-	buf[0] = byte(v >> 8)
-	buf[1] = byte(v)
-	buf = append(buf, b.Bytes()...)
-	_, err := conn.Write(buf)
-	return err
-}
+func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo) *RemoteNode {
+	defer nodeTrace.UT(nodeTrace.T("Node::syncNodeInfo\t%s\tto\t%s", nodeInfo.Name, conn.RemoteAddr().String()))
 
-func (n *Node) syncNodeInfo(conn net.Conn, mine *NodeInfo) error {
-	var b bytes.Buffer
+	var b, wb bytes.Buffer
+	var err error
+
 	enc := gob.NewEncoder(&b)
-	if err := enc.Encode(mine); err != nil {
-		return err
-	}
-	err := SendConnMsg(conn, &b)
+	ext.AssertE(enc.Encode(nodeInfo))
+
+	ext.AssertE(binary.Write(&wb, BYTE_ORDER, uint16(len(b.Bytes()))))
+	_, err = conn.Write(wb.Bytes())
+	ext.AssertE(err)
+
+	_, err = conn.Write(b.Bytes())
+	ext.AssertE(err)
 
 	header := make([]byte, 2)
 	_, err = io.ReadFull(conn, header)
-	if err != nil {
-		return ext.Error(err)
-	}
+	ext.AssertE(err)
 
-	size := binary.BigEndian.Uint16(header)
-	data := make([]byte, size)
-	//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
+	data := make([]byte, BYTE_ORDER.Uint16(header))
 	_, err = io.ReadFull(conn, data)
-	if err != nil {
-		return ext.Error(err)
-	}
+	ext.AssertE(err)
+
+	var r RemoteNode
+	r.Conn = conn
 
 	rb := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(rb)
-	var r RemoteNode
-	if err = dec.Decode(&(r.NodeInfo)); err != nil {
-		return ext.Error(err)
-	}
-	r.Conn = conn
-	n.newConn <- &r
-
-	return err
+	ext.AssertE(dec.Decode(&(r.NodeInfo)))
+	return &r
 }
 
-func (n *Node) Dial(network, address string) error {
+func (self *Node) Dial(network, address string) error {
 	conn, err := net.Dial(network, address)
 	if err != nil {
-		return ext.Error(err)
+		return ext.LogError(err)
 	}
 
-	if err := n.syncNodeInfo(conn, &n.NodeInfo); err != nil {
-		return ext.Error(err)
-	}
+	r := syncNodeInfo(conn, self.NodeInfo)
+	self.connected[r.Name] = r
+
 	return nil
 }
 
-func (n *Node) DialNode(target *Node) (err error) {
-	return n.Dial(target.NodeInfo.Network, target.NodeInfo.String)
+func (self *Node) DialNode(target *Node) (err error) {
+	return self.Dial(target.NodeInfo.Network, target.NodeInfo.String)
 }
 
-func (n *Node) accept() {
+func (self *Node) accept() {
 	for {
-		conn, err := n.Listener.Accept()
+		conn, err := self.Accept()
 		if err != nil {
-			ext.Error(err)
+			ext.LogError(err)
 			return
 		}
-		if err := n.syncNodeInfo(conn, &n.NodeInfo); err != nil {
-			ext.Error(err)
-			conn.Close()
-			continue
-		}
-		go n.dealOneCon(conn)
+		self.newRemote <- syncNodeInfo(conn, self.NodeInfo)
+		go self.dealOneCon(conn)
 	}
 }
 
-func (n *Node) dealOneCon(conn net.Conn) {
+func (self *Node) dealOneCon(conn net.Conn) {
 	header := make([]byte, 2)
-	var connName string
+	//var connName string
 
 	defer func() {
-		conn.Close()
-		n.delConn <- &connName
+		//conn.Close()
+		//self.delConn <- &connName
 	}()
 
 	for {
 		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err := io.ReadFull(conn, header)
-		if err != nil {
-			str := err.Error()
-			_ = str
-			ext.Error(err)
-			return
-		}
+		ext.AssertE(err)
 
-		size := binary.BigEndian.Uint16(header)
-		data := make([]byte, size)
+		data := make([]byte, BYTE_ORDER.Uint16(header))
 		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err = io.ReadFull(conn, data)
-		if err != nil {
-			str := err.Error()
-			_ = str
-			ext.Error(err)
-			return
-		}
+		ext.AssertE(err)
 
 		b := bytes.NewBuffer(data)
 		ok, msg := proto.DecodeMsg(b)
@@ -170,23 +151,22 @@ func (n *Node) dealOneCon(conn net.Conn) {
 	}
 }
 
-func (n *Node) updateConnect() {
+func (self *Node) updateConnect() {
 	for {
 		select {
-		case rc, ok := <-n.newConn:
+		case newRemote, ok := <-self.newRemote:
+			if ok {
+				self.connected[newRemote.Name] = newRemote
+			}
+		case delName, ok := <-self.delConn:
 			if !ok {
 
 			}
-			n.connected[rc.Name] = *rc
-		case delName, ok := <-n.delConn:
-			if !ok {
-
-			}
-			delete(n.connected, *delName)
+			delete(self.connected, *delName)
 		}
 	}
 }
 
-func (n *Node) Connected() RemoteNodeMap {
-	return n.connected
+func (self *Node) Connected() RemoteNodeMap {
+	return self.connected
 }

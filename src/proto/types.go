@@ -1,13 +1,13 @@
 package proto
 
 import (
-	"ext"
 	"crypto/rand"
+	"ext"
 )
 
 func checkErr(err error) {
 	if err != nil {
-		ext.Error(err)
+		ext.LogError(err)
 	}
 }
 
@@ -19,7 +19,7 @@ func (self *UUID) New() {
 	var bt []byte = self[:]
 	_, err := rand.Read(bt)
 	if err != nil {
-		checkErr(err)
+		ext.LogError(err)
 		return
 	}
 }

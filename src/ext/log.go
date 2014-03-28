@@ -1,11 +1,11 @@
 package ext
 
 import (
-	// "bytes"
+	"bytes"
 	"fmt"
 	"log"
 	"os"
-	// "runtime"
+	"runtime"
 )
 
 type Trace bool
@@ -29,7 +29,7 @@ func init() {
 func (t Trace) T(f string, v ...interface{}) string {
 	if t {
 		s := fmt.Sprintf(f, v...)
-		tl.Printf("BGN\t[%s]\n", s)
+		tl.Printf("->\t[%s]\n", s)
 		return s
 	}
 	return f
@@ -37,7 +37,7 @@ func (t Trace) T(f string, v ...interface{}) string {
 
 func (t Trace) UT(s string) {
 	if t {
-		tl.Printf("END\t[%s]\n", s)
+		tl.Printf("<-\t[%s]\n", s)
 	}
 }
 
@@ -56,25 +56,17 @@ func Debugf(format string, v ...interface{}) {
 	dl.Printf(format, v...)
 }
 
-func DebugStackf(format string, v ...interface{}) {
-	// Debugf(format, v...)
-	// b := bytes.NewBuffer()
-	// runtime.Stack(b.Bytes(), false)
-	// dl.Println(b.Bytes())
-}
-
-func DebugError(err error) error {
-	DebugStackf(err.Error())
-	return err
-}
 func Errorf(format string, v ...interface{}) {
 	if el == nil {
 		el = log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 	}
-	el.Panicf(format, v...)
+	el.Printf(format, v...)
+	b := bytes.NewBuffer(make([]byte, 4096))
+	runtime.Stack(b.Bytes(), false)
+	el.Println(b.String())
 }
 
-func Error(err error) error {
+func LogError(err error) error {
 	Errorf(err.Error())
 	return err
 }
