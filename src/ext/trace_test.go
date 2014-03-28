@@ -4,12 +4,12 @@ import (
 	"testing"
 )
 
-func TurnTraceOff() {
-	TraceSwitch = false
-}
+var (
+	tt Trace = true
+)
 
 func TestTrace(t *testing.T) {
-	TraceSwitch = true
-	defer TurnTraceOff()
-	defer UT(T("TestTrace"))
+	if testing.Verbose() {
+		defer tt.UT(tt.T("TestTrace"))
+	}
 }

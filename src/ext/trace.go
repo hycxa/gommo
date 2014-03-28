@@ -2,6 +2,7 @@ package ext
 
 import (
 	// "bytes"
+	"fmt"
 	"log"
 	"os"
 	// "runtime"
@@ -25,25 +26,27 @@ var (
 func init() {
 }
 
-func (t Trace) trace(f string) string {
+func (t Trace) T(f string, v ...interface{}) string {
 	if t {
-		tl.Printf(">>>> [%s]\n", f)
+		s := fmt.Sprintf(f, v...)
+		tl.Printf("BGN\t[%s]\n", s)
+		return s
 	}
 	return f
 }
 
-func (t Trace) untrace(f string) {
+func (t Trace) UT(s string) {
 	if t {
-		tl.Printf("<<<< [%s]\n", f)
+		tl.Printf("END\t[%s]\n", s)
 	}
 }
 
-func T(f string) string {
-	return TraceSwitch.trace(f)
+func T(f string, v ...interface{}) string {
+	return TraceSwitch.T(f, v...)
 }
 
-func UT(f string) {
-	TraceSwitch.untrace(f)
+func UT(s string) {
+	TraceSwitch.UT(s)
 }
 
 func Debugf(format string, v ...interface{}) {
@@ -68,7 +71,7 @@ func Errorf(format string, v ...interface{}) {
 	if el == nil {
 		el = log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 	}
-	//el.Panicf(format, v...)
+	el.Panicf(format, v...)
 }
 
 func Error(err error) error {
