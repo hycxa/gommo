@@ -1,11 +1,9 @@
 package ext
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 )
 
 type Trace bool
@@ -61,9 +59,7 @@ func Errorf(format string, v ...interface{}) {
 		el = log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
 	}
 	el.Printf(format, v...)
-	b := bytes.NewBuffer(make([]byte, 4096))
-	runtime.Stack(b.Bytes(), false)
-	el.Println(b.String())
+	el.Print(Stack())
 }
 
 func LogError(err error) error {

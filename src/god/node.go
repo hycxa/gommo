@@ -35,7 +35,7 @@ type Node struct {
 	NodeInfo
 	net.Listener
 	newRemote chan *RemoteNode
-	delConn   chan *string
+	delConn   chan string
 	connected RemoteNodeMap
 }
 
@@ -56,7 +56,7 @@ func NewNode(name, network, address string) *Node {
 	self.NodeInfo.Network = self.Listener.Addr().Network()
 	self.NodeInfo.String = self.Listener.Addr().String()
 	self.newRemote = make(chan *RemoteNode, 16)
-	self.delConn = make(chan *string, 16)
+	self.delConn = make(chan string, 16)
 	self.connected = make(map[string]*RemoteNode)
 	go self.accept()
 	go self.updateConnect()
@@ -126,11 +126,11 @@ func (self *Node) accept() {
 
 func (self *Node) dealOneCon(conn net.Conn) {
 	header := make([]byte, 2)
-	//var connName string
+	// var connName string
 
 	defer func() {
-		//conn.Close()
-		//self.delConn <- &connName
+		// conn.Close()
+		// self.delConn <- connName
 	}()
 
 	for {
@@ -162,7 +162,7 @@ func (self *Node) updateConnect() {
 			if !ok {
 
 			}
-			delete(self.connected, *delName)
+			delete(self.connected, delName)
 		}
 	}
 }

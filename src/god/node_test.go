@@ -1,6 +1,7 @@
 package god
 
 import (
+	"ext"
 	"testing"
 	"time"
 )
@@ -15,10 +16,10 @@ func TestNewNode(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	nodesOf1 := n1.Connected()
-	if on2, ok := nodesOf1["n2"]; !ok || n2.Name != on2.Name {
-		t.Error("not found n2")
-	}
-	if on3, ok := nodesOf1["n3"]; !ok || n3.Name != on3.Name {
-		t.Error("not found n3")
-	}
+
+	on2, ok := nodesOf1["n2"]
+	ext.AssertT(t, ok && n2.Name == on2.Name, "not found n2")
+
+	on3, ok := nodesOf1["n3"]
+	ext.AssertT(t, ok && n3.Name == on3.Name, "not found n2")
 }
