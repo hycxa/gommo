@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+func sleepALittle() {
+	time.Sleep(100 * time.Millisecond)
+}
+
 func TestNewNode(t *testing.T) {
 	n1 := NewNode("n1", "tcp", "127.0.0.1:2001")
 	n2 := NewNode("n2", "tcp", "127.0.0.1:2002")
@@ -13,7 +17,8 @@ func TestNewNode(t *testing.T) {
 	n2.Dial("tcp", "127.0.0.1:2001")
 	n3.DialNode(n2)
 	n3.DialNode(n1)
-	time.Sleep(100 * time.Millisecond)
+
+	sleepALittle()
 
 	nodesOf1 := n1.Connected()
 
@@ -22,4 +27,5 @@ func TestNewNode(t *testing.T) {
 
 	on3, ok := nodesOf1["n3"]
 	ext.AssertT(t, ok && n3.Name == on3.Name, "not found n2")
+
 }

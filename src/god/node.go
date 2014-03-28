@@ -34,13 +34,14 @@ type RemoteNodeMap map[string]*RemoteNode
 type Node struct {
 	NodeInfo
 	net.Listener
-	newRemote chan *RemoteNode
-	delConn   chan string
-	connected RemoteNodeMap
+	newRemote    chan *RemoteNode
+	closingNodes chan string
+	closeRequest chan bool
+	connected    RemoteNodeMap
 }
 
 var (
-	nodeTrace = ext.Trace(true)
+	nodeTrace = ext.Trace(false)
 )
 
 func NewNode(name, network, address string) *Node {
@@ -56,10 +57,11 @@ func NewNode(name, network, address string) *Node {
 	self.NodeInfo.Network = self.Listener.Addr().Network()
 	self.NodeInfo.String = self.Listener.Addr().String()
 	self.newRemote = make(chan *RemoteNode, 16)
-	self.delConn = make(chan string, 16)
+	self.closingNodes = make(chan string, 16)
 	self.connected = make(map[string]*RemoteNode)
+	self.closeRequest = make(chan bool)
 	go self.accept()
-	go self.updateConnect()
+	go self.update()
 	return self
 }
 
@@ -119,18 +121,18 @@ func (self *Node) accept() {
 			ext.LogError(err)
 			return
 		}
-		self.newRemote <- syncNodeInfo(conn, self.NodeInfo)
-		go self.dealOneCon(conn)
+		r := syncNodeInfo(conn, self.NodeInfo)
+		self.newRemote <- r
+		go dealOneCon(conn, r.Name, self.closingNodes)
 	}
 }
 
-func (self *Node) dealOneCon(conn net.Conn) {
+func dealOneCon(conn net.Conn, nodeName string, closingNodes chan string) {
 	header := make([]byte, 2)
-	// var connName string
 
 	defer func() {
-		// conn.Close()
-		// self.delConn <- connName
+		conn.Close()
+		closingNodes <- nodeName
 	}()
 
 	for {
@@ -151,22 +153,30 @@ func (self *Node) dealOneCon(conn net.Conn) {
 	}
 }
 
-func (self *Node) updateConnect() {
+func (self *Node) update() {
 	for {
 		select {
 		case newRemote, ok := <-self.newRemote:
 			if ok {
 				self.connected[newRemote.Name] = newRemote
 			}
-		case delName, ok := <-self.delConn:
-			if !ok {
-
+		case nodeName, ok := <-self.closingNodes:
+			if ok {
+				delete(self.connected, nodeName)
 			}
-			delete(self.connected, delName)
+		case <-self.closeRequest:
+			for _, remoteNode := range self.connected {
+				remoteNode.Close()
+			}
+			return
 		}
 	}
 }
 
 func (self *Node) Connected() RemoteNodeMap {
 	return self.connected
+}
+
+func (self *Node) Close() {
+	self.closeRequest <- true
 }

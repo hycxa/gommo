@@ -43,7 +43,7 @@ func Handle(id proto.PacketID, m Marshaler) (retID proto.PacketID, ret Marshaler
 
 func (p *process) Handle(id proto.PacketID, m Marshaler) (retID proto.PacketID, ret Marshaler, err error) {
 	defer ext.UT(ext.T("process::Handle"))
-	ext.Debugf("P[%s]%#v\n", p.Name, m)
+	//ext.Debugf("P[%s]%#v\n", p.Name, m)
 	return Handle(id, m)
 }
 
