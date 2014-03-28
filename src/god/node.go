@@ -66,13 +66,37 @@ func SendConnMsg(conn net.Conn, b *bytes.Buffer) error {
 	return err
 }
 
-func syncNodeInfo(conn net.Conn, mine *NodeInfo) error {
+func (n *Node) syncNodeInfo(conn net.Conn, mine *NodeInfo) error {
 	var b bytes.Buffer
 	enc := gob.NewEncoder(&b)
 	if err := enc.Encode(mine); err != nil {
 		return err
 	}
 	err := SendConnMsg(conn, &b)
+
+	header := make([]byte, 2)
+	_, err = io.ReadFull(conn, header)
+	if err != nil {
+		return ext.Error(err)
+	}
+
+	size := binary.BigEndian.Uint16(header)
+	data := make([]byte, size)
+	//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
+	_, err = io.ReadFull(conn, data)
+	if err != nil {
+		return ext.Error(err)
+	}
+
+	rb := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(rb)
+	var r RemoteNode
+	if err = dec.Decode(&(r.NodeInfo)); err != nil {
+		return ext.Error(err)
+	}
+	r.Conn = conn
+	n.newConn <- &r
+
 	return err
 }
 
@@ -82,7 +106,7 @@ func (n *Node) Dial(network, address string) error {
 		return ext.Error(err)
 	}
 
-	if err := syncNodeInfo(conn, &n.NodeInfo); err != nil {
+	if err := n.syncNodeInfo(conn, &n.NodeInfo); err != nil {
 		return ext.Error(err)
 	}
 	return nil
@@ -99,6 +123,11 @@ func (n *Node) accept() {
 			ext.Error(err)
 			return
 		}
+		if err := n.syncNodeInfo(conn, &n.NodeInfo); err != nil {
+			ext.Error(err)
+			conn.Close()
+			continue
+		}
 		go n.dealOneCon(conn)
 	}
 }
@@ -106,7 +135,6 @@ func (n *Node) accept() {
 func (n *Node) dealOneCon(conn net.Conn) {
 	header := make([]byte, 2)
 	var connName string
-	isFirstData := false
 
 	defer func() {
 		conn.Close()
@@ -117,6 +145,8 @@ func (n *Node) dealOneCon(conn net.Conn) {
 		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
+			str := err.Error()
+			_ = str
 			ext.Error(err)
 			return
 		}
@@ -126,27 +156,16 @@ func (n *Node) dealOneCon(conn net.Conn) {
 		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err = io.ReadFull(conn, data)
 		if err != nil {
+			str := err.Error()
+			_ = str
 			ext.Error(err)
 			return
 		}
 
 		b := bytes.NewBuffer(data)
-		if !isFirstData {
-			isFirstData = true
-			dec := gob.NewDecoder(b)
-			var r RemoteNode
-			if err := dec.Decode(&(r.NodeInfo)); err != nil {
-				ext.Error(err)
-				continue
-			}
-			r.Conn = conn
-			connName = r.NodeInfo.Name
-			n.newConn <- &r
-		} else {
-			ok, msg := proto.DecodeMsg(b)
-			if ok {
-				_ = msg //消息处理
-			}
+		ok, msg := proto.DecodeMsg(b)
+		if ok {
+			_ = msg //消息处理
 		}
 	}
 }
