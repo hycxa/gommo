@@ -9,12 +9,12 @@ type Person struct {
 	*god.Process
 }
 
-func NewPerson() *Person {
+func NewPerson(node *god.Node) *Person {
 	p := new(Person)
-	p.Process = god.NewProcess(p)
+	p.Process = god.NewProcess(node, p)
 	return p
 }
 
-func (p *Person) Handle(pID proto.PacketID, data god.Marshaler) (retID proto.PacketID, ret god.Marshaler, err error) {
-	return pID, data, nil
+func (p *Person) Handle(pID proto.PacketID, data *proto.Message) (err error) {
+	return  nil
 }

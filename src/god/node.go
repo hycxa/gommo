@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"ext"
+	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -46,6 +47,7 @@ type Node struct {
 	closingNodes chan string
 	closeRequest chan bool
 	connected    RemoteNodeMap
+	objects      map[proto.UUID]*Process
 }
 
 var (
@@ -69,6 +71,7 @@ func NewNode(name, network, address string, nodeType string) *Node {
 	self.closingNodes = make(chan string, 16)
 	self.connected = make(map[string]*RemoteNode)
 	self.closeRequest = make(chan bool)
+	self.objects = make(map[proto.UUID]*Process)
 	go self.accept()
 	go self.update()
 	return self
@@ -248,4 +251,23 @@ func (self *Node) Connected() RemoteNodeMap {
 
 func (self *Node) Close() {
 	self.closeRequest <- true
+}
+
+func (self *Node) Notify(source proto.UUID, target proto.UUID, packetID proto.PacketID, data interface{}) error {
+	defer ext.UT(ext.T("NOTIFY"))
+	t, ok := self.objects[target]
+	if !ok {
+		return fmt.Errorf("Target %v is not found!", target)
+	}
+	m := proto.Message{Sender: source, Data: data, PackID: packetID}
+	t.mq <- m
+	return nil
+}
+
+func (self *Node) Call(packID proto.PacketID, data proto.Message) (retID proto.PacketID, ret proto.Message, err error) {
+	return 0, proto.Message{}, nil
+}
+
+func (self *Node) AddProcess(o *Process) {
+	self.objects[o.UUID] = o
 }
