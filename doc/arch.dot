@@ -1,48 +1,37 @@
 graph G {
-	//graph [label="The Architecture of golang distributed framework" fontsize=12];
+	graph [label="The Architecture of distributed server framework"];
 	//node [colorscheme=rdbu11 fontsize=12];
 	//edge [colorscheme=rdbu11 fontsize=12];
 
-	// CT = Center
-	// DC = DataCenter
-	// GN = GameNode
-	// G = Gate
-	// MQ = RabbitMQ
-	
 	subgraph clusterDB {
-		graph [label = "Database Cluster"]
-
-		//Mongodb1 -- Mongodb2
+		graph [label = "Database Cluster\n(MongoDB)"]
 	}
 
-	subgraph clusterSMQ {
-		graph [label = "Hub Cluster"]
-		//SMQ1 -- SMQ2 -- SMQ3 -- SMQ1
+	subgraph clusterHub {
+		graph [label = "Hub Cluster\n(RabbitMQ)"]
 	}
 
 	subgraph clusterGate {
-		graph [label = "Gate Cluster"]
-		//GMQ1 -- GMQ2 -- GMQ3 -- GMQ1
+		graph [label = "Gate Cluster\n(RabbitMQ)"]
 	}
 
-	subgraph clusterGN1 {
-		graph [label="Game Cluster 1"]
-		GameNode1 -- GameNode2 -- GameNode3 -- GameNode1
+	subgraph clusterApp1 {
+		graph [label="AppCluster1\n(Go)"]
+		AppNode1 -- AppNode2 -- AppNode3 -- AppNode1
 	}
 
-	subgraph clusterGN2 {
-		graph [label="Game Cluster 2"]
-		//GN21 -- GN22
+	subgraph clusterApp2 {
+		graph [label="AppCluster2\n(Go)"]
 	}
 
-	clusterGN1 -- clusterSMQ
-	clusterGN2 -- clusterSMQ
+	clusterApp1 -- clusterHub
+	clusterApp2 -- clusterHub
 
-	clusterGN1 -- clusterGate
-	clusterGN2 -- clusterGate
+	clusterApp1 -- clusterGate
+	clusterApp2 -- clusterGate
 
-	clusterGN1 -- clusterDB
-	clusterGN2 -- clusterDB
+	clusterApp1 -- clusterDB
+	clusterApp2 -- clusterDB
 
 	Client1 -- clusterGate
 	Client2 -- clusterGate
