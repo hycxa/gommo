@@ -4,24 +4,32 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"encoding/json"
 	"ext"
 	"hash"
 	"io"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"proto"
-	//"time"
 )
 
 const (
 	TCP_TIMEOUT = 12000
 )
 
+const (
+	NODE_GS_TYPE   = "GS"
+	NODE_GATE_TYPE = "GATE"
+)
+
 type NodeID hash.Hash
 
 type NodeInfo struct {
-	Name    string
-	Network string
-	String  string
+	Name     string
+	Network  string
+	String   string
+	NodeType string
 }
 
 type RemoteNode struct {
@@ -44,7 +52,7 @@ var (
 	nodeTrace = ext.Trace(false)
 )
 
-func NewNode(name, network, address string) *Node {
+func NewNode(name, network, address string, nodeType string) *Node {
 	var err error
 	self := new(Node)
 	self.Listener, err = net.Listen(network, address)
@@ -56,6 +64,7 @@ func NewNode(name, network, address string) *Node {
 	self.Name = name
 	self.NodeInfo.Network = self.Listener.Addr().Network()
 	self.NodeInfo.String = self.Listener.Addr().String()
+	self.NodeType = nodeType
 	self.newRemote = make(chan *RemoteNode, 16)
 	self.closingNodes = make(chan string, 16)
 	self.connected = make(map[string]*RemoteNode)
@@ -99,19 +108,79 @@ func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo) *RemoteNode {
 }
 
 func (self *Node) Dial(network, address string) error {
+	_, ok := self.connected[address]
+	if ok || address == self.String {
+		return nil
+	}
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return ext.LogError(err)
 	}
 
 	r := syncNodeInfo(conn, self.NodeInfo)
-	self.connected[r.Name] = r
+	self.connected[r.String] = r
 
 	return nil
 }
 
 func (self *Node) DialNode(target *Node) (err error) {
 	return self.Dial(target.NodeInfo.Network, target.NodeInfo.String)
+}
+
+func (self *Node) ConnOtherSvr() error {
+	client := &http.Client{}
+	reqPost, err := http.NewRequest("POST", "http://127.0.0.1:20000/locatePost", nil)
+	if err != nil {
+		return ext.LogError(err)
+	}
+	reqPost.Header.Set("Node-Addr", self.String)
+	reqPost.Header.Set("service", self.NodeType)
+	postRep, err := client.Do(reqPost)
+	defer postRep.Body.Close()
+	if err != nil {
+		return ext.LogError(err)
+	}
+
+	reqGet, err := http.NewRequest("GET", "http://127.0.0.1:20000/locateGet", nil)
+	if err != nil {
+		return ext.LogError(err)
+	}
+	getSvrTab := make([]string, 2)
+	getSvrTab[0] = NODE_GS_TYPE
+	if self.NodeType == NODE_GS_TYPE {
+		getSvrTab[0] = NODE_GS_TYPE
+		getSvrTab[1] = NODE_GATE_TYPE
+	}
+	for i := 0; i < len(getSvrTab); i++ {
+		if getSvrTab[i] != "" {
+			reqGet.Header.Set("service", getSvrTab[i])
+			resp, err := client.Do(reqGet)
+			defer resp.Body.Close()
+			if err != nil {
+				return ext.LogError(err)
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					return ext.LogError(err)
+				}
+				var svrList []string
+				err = json.Unmarshal(body, &svrList)
+				if err != nil {
+					return ext.LogError(err)
+				}
+				for index := 0; index < len(svrList); index++ {
+					err := self.Dial("tcp", svrList[index])
+					if err != nil {
+						ext.LogError(err)
+					}
+				}
+			}
+
+		}
+	}
+	return err
 }
 
 func (self *Node) accept() {
@@ -123,16 +192,16 @@ func (self *Node) accept() {
 		}
 		r := syncNodeInfo(conn, self.NodeInfo)
 		self.newRemote <- r
-		go dealOneCon(conn, r.Name, self.closingNodes)
+		go dealOneCon(conn, r.String, self.closingNodes)
 	}
 }
 
-func dealOneCon(conn net.Conn, nodeName string, closingNodes chan string) {
+func dealOneCon(conn net.Conn, nodeAddr string, closingNodes chan string) {
 	header := make([]byte, 2)
 
 	defer func() {
 		conn.Close()
-		closingNodes <- nodeName
+		closingNodes <- nodeAddr
 	}()
 
 	for {
@@ -158,11 +227,11 @@ func (self *Node) update() {
 		select {
 		case newRemote, ok := <-self.newRemote:
 			if ok {
-				self.connected[newRemote.Name] = newRemote
+				self.connected[newRemote.String] = newRemote
 			}
-		case nodeName, ok := <-self.closingNodes:
+		case nodeAddr, ok := <-self.closingNodes:
 			if ok {
-				delete(self.connected, nodeName)
+				delete(self.connected, nodeAddr)
 			}
 		case <-self.closeRequest:
 			for _, remoteNode := range self.connected {
