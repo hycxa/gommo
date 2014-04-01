@@ -5,45 +5,46 @@ graph G {
 
 	// CT = Center
 	// DC = DataCenter
-	// GS = GameServer
+	// GN = GameNode
 	// G = Gate
+	// MQ = RabbitMQ
+	
+	subgraph clusterDB {
+		graph [label = "Database Cluster"]
 
-	subgraph clusterCT {
-		CT1 -- CT2 -- CT3 -- CT1
+		//Mongodb1 -- Mongodb2
 	}
 
-	subgraph clusterDC1 {
-		subgraph clusterGS1 {
-			GS11 -- GS12 -- GS13 -- GS11
-		}
-
-		Gate11 -- clusterGS1
-
-		Gate12 -- clusterGS1
-
+	subgraph clusterSMQ {
+		graph [label = "Hub Cluster"]
+		//SMQ1 -- SMQ2 -- SMQ3 -- SMQ1
 	}
 
-	subgraph clusterDC2 {
-		subgraph clusterGS2 {
-			GS21 -- GS22
-		}
-
-		Gate21 -- clusterGS2
+	subgraph clusterGate {
+		graph [label = "Gate Cluster"]
+		//GMQ1 -- GMQ2 -- GMQ3 -- GMQ1
 	}
 
-	subgraph clusterDC3 [label=DC3]{
-
+	subgraph clusterGN1 {
+		graph [label="Game Cluster 1"]
+		GameNode1 -- GameNode2 -- GameNode3 -- GameNode1
 	}
 
-	subgraph clusterDC4 {
-
+	subgraph clusterGN2 {
+		graph [label="Game Cluster 2"]
+		//GN21 -- GN22
 	}
 
-	clusterDC1 -- clusterDC2
+	clusterGN1 -- clusterSMQ
+	clusterGN2 -- clusterSMQ
 
-	clusterDC1 -- clusterCT -- clusterDC2
+	clusterGN1 -- clusterGate
+	clusterGN2 -- clusterGate
 
-	Client1 -- Gate11
-	Client2 -- Gate12
-	Client3 -- Gate21
+	clusterGN1 -- clusterDB
+	clusterGN2 -- clusterDB
+
+	Client1 -- clusterGate
+	Client2 -- clusterGate
+	Client3 -- clusterGate
 }
