@@ -1,15 +1,49 @@
 graph G {
-	graph [label="The Architecture of golang distributed framework" fontsize=12];
-	node [colorscheme=rdbu11 fontsize=12];
-	edge [colorscheme=rdbu11 fontsize=12];
-	subgraph cluster1GS{
-		C1GS1;C1GS2
+	//graph [label="The Architecture of golang distributed framework" fontsize=12];
+	//node [colorscheme=rdbu11 fontsize=12];
+	//edge [colorscheme=rdbu11 fontsize=12];
+
+	// CT = Center
+	// DC = DataCenter
+	// GS = GameServer
+	// G = Gate
+
+	subgraph clusterCT {
+		CT1 -- CT2 -- CT3 -- CT1
 	}
 
-	subgraph cluster1GS {
-		C2GS1;C2GS2
+	subgraph clusterDC1 {
+		subgraph clusterGS1 {
+			GS11 -- GS12 -- GS13 -- GS11
+		}
+
+		Gate11 -- clusterGS1
+
+		Gate12 -- clusterGS1
+
 	}
 
-	//Gate1->cluster1GS
-	//Gate2->cluster2GS
+	subgraph clusterDC2 {
+		subgraph clusterGS2 {
+			GS21 -- GS22
+		}
+
+		Gate21 -- clusterGS2
+	}
+
+	subgraph clusterDC3 [label=DC3]{
+
+	}
+
+	subgraph clusterDC4 {
+
+	}
+
+	clusterDC1 -- clusterDC2
+
+	clusterDC1 -- clusterCT -- clusterDC2
+
+	Client1 -- Gate11
+	Client2 -- Gate12
+	Client3 -- Gate21
 }

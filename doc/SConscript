@@ -2,7 +2,7 @@ import os
 
 env = Environment(ENV=os.environ)
 
-bld = Builder(action = 'dot -Tpng $SOURCE -o $TARGET',
+bld = Builder(action = 'fdp -Tpng $SOURCE -o $TARGET',
 		suffix = '.png',
 		src_suffix = '.dot')
 env.Append(BUILDERS = {'Dot' : bld})
