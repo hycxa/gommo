@@ -1,0 +1,35 @@
+digraph G {
+	graph [label="App Node Model"];
+	//node [colorscheme=rdbu11 fontsize=12];
+	//edge [colorscheme=rdbu11 fontsize=12];
+
+	NodeListenr
+
+	//Process1 -- Process2 -- Process3 -- Process1
+
+
+	subgraph Process1 {
+		graph [label = "Process1\n(goroutine)"]
+
+	}
+
+	Process1 -> Process2 [label="call(1)"]
+
+	Process2 -> Process1 [label="reply(2)"]
+
+	Process1 -> Process2 [label="notify"]
+
+	Process1 -> Process3 [label="notify"]
+
+	subgraph Process2 {
+		graph [label = "Process2\n(goroutine)"]
+
+
+	}
+
+	subgraph Process3 {
+		graph [label = "Process3\n(goroutine)"]
+	}
+
+
+}

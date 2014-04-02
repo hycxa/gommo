@@ -2,14 +2,21 @@ import os
 
 env = Environment(ENV=os.environ)
 
-bld = Builder(action = 'fdp -Tpng $SOURCE -o $TARGET',
+env.Append(BUILDERS = {'Dot' : Builder(action = 'dot -Tpng $SOURCE -o $TARGET',
 		suffix = '.png',
-		src_suffix = '.dot')
-env.Append(BUILDERS = {'Dot' : bld})
+		src_suffix = '.dot')})
+
+env.Append(BUILDERS = {'Fdp' : Builder(action = 'fdp -Tpng $SOURCE -o $TARGET',
+		suffix = '.png',
+		src_suffix = '.fdp')})
 
 files = env.Glob('*.dot')
 for filename in files:
 	env.Dot(filename)
 	pass
 
+files = env.Glob('*.fdp')
+for filename in files:
+	env.Fdp(filename)
+	pass
 
