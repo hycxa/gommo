@@ -1,49 +1,39 @@
 graph G {
-	//graph [label="The Architecture of golang distributed framework" fontsize=12];
+	graph [label="The Architecture of distributed server framework"];
 	//node [colorscheme=rdbu11 fontsize=12];
 	//edge [colorscheme=rdbu11 fontsize=12];
 
-	// CT = Center
-	// DC = DataCenter
-	// GS = GameServer
-	// G = Gate
-
-	subgraph clusterCT {
-		CT1 -- CT2 -- CT3 -- CT1
+	subgraph clusterDB {
+		graph [label = "Database Cluster\n(MongoDB)"]
 	}
 
-	subgraph clusterDC1 {
-		subgraph clusterGS1 {
-			GS11 -- GS12 -- GS13 -- GS11
-		}
-
-		Gate11 -- clusterGS1
-
-		Gate12 -- clusterGS1
-
+	subgraph clusterHub {
+		graph [label = "Hub Cluster\n(RabbitMQ)"]
 	}
 
-	subgraph clusterDC2 {
-		subgraph clusterGS2 {
-			GS21 -- GS22
-		}
-
-		Gate21 -- clusterGS2
+	subgraph clusterGate {
+		graph [label = "Gate Cluster\n(RabbitMQ)"]
 	}
 
-	subgraph clusterDC3 [label=DC3]{
-
+	subgraph clusterApp1 {
+		graph [label="AppCluster1\n(Go)"]
+		AppNode1 -- AppNode2 -- AppNode3 -- AppNode1
 	}
 
-	subgraph clusterDC4 {
-
+	subgraph clusterApp2 {
+		graph [label="AppCluster2\n(Go)"]
 	}
 
-	clusterDC1 -- clusterDC2
+	clusterApp1 -- clusterHub
+	clusterApp2 -- clusterHub
 
-	clusterDC1 -- clusterCT -- clusterDC2
+	clusterApp1 -- clusterGate
+	clusterApp2 -- clusterGate
 
-	Client1 -- Gate11
-	Client2 -- Gate12
-	Client3 -- Gate21
+	clusterApp1 -- clusterDB
+	clusterApp2 -- clusterDB
+
+	Client1 -- clusterGate
+	Client2 -- clusterGate
+	Client3 -- clusterGate
 }
