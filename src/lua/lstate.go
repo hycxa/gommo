@@ -1,9 +1,8 @@
 package lua
 
 /*
-//#cgo CFLAGS: -I/opt/local/include/
-#cgo LDFLAGS: -llua
-//-L/opt/local/lib
+#cgo CFLAGS: -I/opt/local/include/
+#cgo LDFLAGS: -llua -L/opt/local/lib
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -31,60 +30,64 @@ type L struct {
 }
 
 func NewL() *L {
-	self := new(L)
-	self.s = C.luaL_newstate()
-	C.luaL_openlibs(self.s)
-	return self
+	l := new(L)
+	l.s = C.luaL_newstate()
+	C.luaL_openlibs(l.s)
+	return l
 }
 
-func (self *L) Close() {
-	C.lua_close(self.s)
+func (l *L) Close() {
+	C.lua_close(l.s)
 }
 
-func (self *L) DoString(str string) (ret []interface{}) {
-
-	oriCnt := C.lua_gettop(self.s)
-	C.luaL_loadstring(self.s, C.CString(str))
-
-	C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
-
-	n := C.lua_gettop(self.s) - oriCnt
-	ret = make([]interface{}, int(n))
-	println(n)
-
-	for i, index := C.int(1), 0; i <= n; i++ {
-		t := C.lua_type(self.s, i)
-		println("lua_type", t)
-		switch t {
-		case C.LUA_TNIL:
-			ret[index] = nil
-		case C.LUA_TBOOLEAN:
-			ret[index] = bool(C.lua_toboolean(self.s, i) != 0)
-		case C.LUA_TNUMBER:
-			ret[index] = int64(C.lua_tonumberx(self.s, i, nil))
-		case C.LUA_TSTRING:
-			ret[index] = C.GoString(C.lua_tolstring(self.s, i, nil))
-		case C.LUA_TTABLE:
-			ret[index] = nil
-		case C.LUA_TFUNCTION:
-			ret[index] = nil
-		case C.LUA_TUSERDATA:
-			ret[index] = nil
-		case C.LUA_TTHREAD:
-			ret[index] = nil
-		case C.LUA_TLIGHTUSERDATA:
-			ret[index] = nil
-		default:
-			ret[index] = nil
-		}
-		index++
+func value(s *C.lua_State, i C.int) interface{} {
+	t := C.lua_type(s, i)
+	switch t {
+	case C.LUA_TNIL:
+		return nil
+	case C.LUA_TBOOLEAN:
+		return bool(C.lua_toboolean(s, i) != 0)
+	case C.LUA_TLIGHTUSERDATA:
+		return nil
+	case C.LUA_TNUMBER:
+		return int64(C.lua_tonumberx(s, i, nil))
+	case C.LUA_TSTRING:
+		return C.GoString(C.lua_tolstring(s, i, nil))
+	case C.LUA_TTABLE:
+		return nil
+	case C.LUA_TFUNCTION:
+		return nil
+	case C.LUA_TUSERDATA:
+		return nil
+	case C.LUA_TTHREAD:
+		return nil
 	}
-	C.lua_settop(self.s, oriCnt)
+	return nil
+}
+
+func (l *L) DoString(str string) (ok bool, ret []interface{}) {
+
+	n := C.lua_gettop(l.s)
+	C.luaL_loadstring(l.s, C.CString(str))
+
+	if C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0 {
+		ok = true
+	} else {
+		ok = false
+	}
+
+	retCnt := C.lua_gettop(l.s) - n
+	ret = make([]interface{}, int(retCnt))
+
+	for i := C.int(0); i < n; i++ {
+		ret[i] = value(l.s, i+1)
+	}
+	C.lua_settop(l.s, n)
 
 	return
 }
 
-func (self *L) Call(f string, v ...interface{}) (ret []interface{}) {
+func (l *L) Call(f string, v ...interface{}) (ok bool, ret []interface{}) {
 	ret = make([]interface{}, 0)
 	return
 }
