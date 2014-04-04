@@ -10,7 +10,7 @@ func TestNewState(t *testing.T) {
 	l.Close()
 }
 
-func TestPCall(t *testing.T) {
+func TestCall(t *testing.T) {
 	l := NewL()
 	defer l.Close()
 
