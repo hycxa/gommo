@@ -30,10 +30,10 @@ type L struct {
 }
 
 func NewL() *L {
-	l := new(L)
-	l.s = C.luaL_newstate()
-	C.luaL_openlibs(l.s)
-	return l
+	self := new(L)
+	self.s = C.luaL_newstate()
+	C.luaL_openlibs(self.s)
+	return self
 }
 
 func (self *L) Close() {
@@ -68,5 +68,10 @@ func (self *L) DoString(str string) (ret []interface{}) {
 		}
 	}
 
+	return
+}
+
+func (self *L) Call(f string, v ...interface{}) (ret []interface{}) {
+	ret = make([]interface{}, 0)
 	return
 }
