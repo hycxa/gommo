@@ -65,17 +65,17 @@ func value(s *C.lua_State, i C.int) interface{} {
 	return nil
 }
 
-func (l *L) getRetValue(args C.int) *[]interface{} {
+func (l *L) getRetValue(args C.int) []interface{} {
 	ret := make([]interface{}, int(args))
 
 	for i, index := C.int(1), 0; i <= args; i++ {
 		ret[index] = value(l.s, i)
 		index++
 	}
-	return &ret
+	return ret
 }
 
-func (l *L) DoString(str string) (ok bool, ret *[]interface{}) {
+func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.luaL_loadstring(l.s, C.CString(str))
 
@@ -90,7 +90,7 @@ func (l *L) DoString(str string) (ok bool, ret *[]interface{}) {
 	return
 }
 
-func (l *L) Call(f string, args ...interface{}) (ok bool, ret *[]interface{}) {
+func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.lua_getglobal(l.s, C.CString(f))
 	nargs := 0
