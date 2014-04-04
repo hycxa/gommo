@@ -79,7 +79,7 @@ func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	retCnt := C.lua_gettop(l.s) - n
 	ret = make([]interface{}, int(retCnt))
 
-	for i := C.int(0); i < n; i++ {
+	for i := C.int(0); i < retCnt; i++ {
 		ret[i] = value(l.s, i+1)
 	}
 	C.lua_settop(l.s, n)

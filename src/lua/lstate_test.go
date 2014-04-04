@@ -19,7 +19,7 @@ func TestDoString(t *testing.T) {
 
 	ok, r = l.DoString("return echo(1, \"s\", true)")
 
-	ext.AssertT(t, ok && len(r) == 3, "call error")
+	ext.AssertT(t, ok && len(r) == 3, "echo error")
 	ext.AssertT(t, 1 == r[0].(int64), "return 1 error")
 	ext.AssertT(t, "s" == r[1].(string), "return 2 error")
 	ext.AssertT(t, true == r[2].(bool), "return 3 error")
