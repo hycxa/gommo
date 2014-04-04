@@ -40,14 +40,22 @@ type RemoteNode struct {
 
 type RemoteNodeMap map[string]*RemoteNode
 
+type SendObjsInfo struct {
+	NodeAddr string
+	Objs     []proto.UUID
+}
+
 type Node struct {
 	NodeInfo
 	net.Listener
-	newRemote    chan *RemoteNode
-	closingNodes chan string
-	closeRequest chan bool
-	connected    RemoteNodeMap
-	objects      map[proto.UUID]*Process
+	newRemote       chan *RemoteNode
+	newRemoteObjs   chan *SendObjsInfo
+	closeRemoteObjs chan *[]proto.UUID
+	closingNodes    chan string
+	closeRequest    chan bool
+	connected       RemoteNodeMap
+	objects         map[proto.UUID]*Process
+	remoteObjs      map[proto.UUID]string
 }
 
 var (
@@ -69,15 +77,18 @@ func NewNode(name, network, address string, nodeType string) *Node {
 	self.NodeType = nodeType
 	self.newRemote = make(chan *RemoteNode, 16)
 	self.closingNodes = make(chan string, 16)
+	self.newRemoteObjs = make(chan *SendObjsInfo)
+	self.closeRemoteObjs = make(chan *[]proto.UUID)
 	self.connected = make(map[string]*RemoteNode)
 	self.closeRequest = make(chan bool)
 	self.objects = make(map[proto.UUID]*Process)
+	self.remoteObjs = make(map[proto.UUID]string)
 	go self.accept()
 	go self.update()
 	return self
 }
 
-func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo) *RemoteNode {
+func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo, objs *map[proto.UUID]*Process) (*RemoteNode, *SendObjsInfo) {
 	defer nodeTrace.UT(nodeTrace.T("Node::syncNodeInfo\t%s\tto\t%s", nodeInfo.Name, conn.RemoteAddr().String()))
 
 	var b, wb bytes.Buffer
@@ -85,6 +96,14 @@ func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo) *RemoteNode {
 
 	enc := gob.NewEncoder(&b)
 	ext.AssertE(enc.Encode(nodeInfo))
+
+	selfObjs := make([]proto.UUID, len(*objs))
+	var index = 0
+	for uuid, _ := range *objs {
+		selfObjs[index] = uuid
+		index++
+	}
+	ext.AssertE(enc.Encode(selfObjs))
 
 	ext.AssertE(binary.Write(&wb, BYTE_ORDER, uint16(len(b.Bytes()))))
 	_, err = conn.Write(wb.Bytes())
@@ -107,7 +126,12 @@ func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo) *RemoteNode {
 	rb := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(rb)
 	ext.AssertE(dec.Decode(&(r.NodeInfo)))
-	return &r
+
+	var retObjs SendObjsInfo
+	retObjs.NodeAddr = r.String
+	ext.AssertE(dec.Decode(&(retObjs.Objs)))
+
+	return &r, &retObjs
 }
 
 func (self *Node) Dial(network, address string) error {
@@ -120,8 +144,11 @@ func (self *Node) Dial(network, address string) error {
 		return ext.LogError(err)
 	}
 
-	r := syncNodeInfo(conn, self.NodeInfo)
+	r, rObjs := syncNodeInfo(conn, self.NodeInfo, &self.objects)
 	self.connected[r.String] = r
+	for i := 0; i < len(rObjs.Objs); i++ {
+		self.remoteObjs[rObjs.Objs[i]] = r.String
+	}
 
 	return nil
 }
@@ -193,13 +220,14 @@ func (self *Node) accept() {
 			ext.LogError(err)
 			return
 		}
-		r := syncNodeInfo(conn, self.NodeInfo)
+		r, rObjs := syncNodeInfo(conn, self.NodeInfo, &self.objects)
 		self.newRemote <- r
-		go dealOneCon(conn, r.String, self.closingNodes)
+		self.newRemoteObjs <- rObjs
+		go self.dealOneCon(conn, r.String, self.closingNodes)
 	}
 }
 
-func dealOneCon(conn net.Conn, nodeAddr string, closingNodes chan string) {
+func (self *Node) dealOneCon(conn net.Conn, nodeAddr string, closingNodes chan string) {
 	header := make([]byte, 2)
 
 	defer func() {
@@ -232,9 +260,30 @@ func (self *Node) update() {
 			if ok {
 				self.connected[newRemote.String] = newRemote
 			}
+		case newObjs, ok := <-self.newRemoteObjs:
+			if ok {
+				for i := 0; i < len(newObjs.Objs); i++ {
+					self.remoteObjs[newObjs.Objs[i]] = newObjs.NodeAddr
+				}
+			}
 		case nodeAddr, ok := <-self.closingNodes:
 			if ok {
 				delete(self.connected, nodeAddr)
+				var delTab []proto.UUID
+				for uuid, addr := range self.remoteObjs {
+					if addr == nodeAddr {
+						delTab = append(delTab, uuid)
+					}
+				}
+				for i := 0; i < len(delTab); i++ {
+					delete(self.remoteObjs, delTab[i])
+				}
+			}
+		case closeObjs, ok := <-self.closeRemoteObjs:
+			if ok {
+				for i := 0; i < len(*closeObjs); i++ {
+					delete(self.remoteObjs, (*closeObjs)[i])
+				}
 			}
 		case <-self.closeRequest:
 			for _, remoteNode := range self.connected {
@@ -255,12 +304,31 @@ func (self *Node) Close() {
 
 func (self *Node) Notify(source proto.UUID, target proto.UUID, packetID proto.PacketID, data interface{}) error {
 	defer ext.UT(ext.T("NOTIFY"))
-	t, ok := self.objects[target]
-	if !ok {
+	t, ok1 := self.objects[target]
+	otherSvrAddr, ok2 := self.remoteObjs[target]
+	if !ok1 && !ok2 {
 		return fmt.Errorf("Target %v is not found!", target)
 	}
 	m := proto.Message{Sender: source, Data: data, PackID: packetID}
-	t.mq <- m
+
+	if ok1 {
+		t.mq <- m
+	} else {
+		otherSvr, ok3 := self.connected[otherSvrAddr]
+		if !ok3 {
+			return fmt.Errorf("Target %v is not found!", target)
+		}
+		var b, wb bytes.Buffer
+		ret := proto.EncodeMsg(&b, &m)
+		if !ret {
+			return fmt.Errorf("Encode fail %v", target)
+		}
+		ext.AssertE(binary.Write(&wb, BYTE_ORDER, uint16(len(b.Bytes()))))
+		_, err := otherSvr.Conn.Write(wb.Bytes())
+		ext.AssertE(err)
+		_, err = otherSvr.Conn.Write(b.Bytes())
+		ext.AssertE(err)
+	}
 	return nil
 }
 
