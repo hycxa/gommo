@@ -5,9 +5,19 @@ import (
 	"testing"
 )
 
-func TestNewState(t *testing.T) {
+func TestNewLua(t *testing.T) {
 	l := NewLua()
 	l.Close()
+}
+
+func BenchmarkNewLua(b *testing.B) {
+	l := make([]*L, b.N)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l[i] = NewLua()
+		//defer l[i].Close()
+	}
 }
 
 func TestDoString(t *testing.T) {
