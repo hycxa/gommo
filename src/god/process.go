@@ -7,7 +7,7 @@ import (
 
 type Process struct {
 	Handler
-	UUID proto.UUID
+	proto.UUID
 	mq   chan proto.Message
 	quit chan int
 }
