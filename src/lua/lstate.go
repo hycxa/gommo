@@ -52,7 +52,7 @@ func (self *L) DoString(str string) (ret []interface{}) {
 	ret = make([]interface{}, int(n))
 	println(n)
 
-	for i, index := C.int(-1), 0; i >= -n; i-- {
+	for i, index := C.int(1), 0; i <= n; i++ {
 		t := C.lua_type(self.s, i)
 		println("lua_type", t)
 		switch t {
