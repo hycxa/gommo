@@ -6,12 +6,12 @@ import (
 )
 
 func TestNewState(t *testing.T) {
-	l := NewL()
+	l := NewLua()
 	l.Close()
 }
 
 func TestDoString(t *testing.T) {
-	l := NewL()
+	l := NewLua()
 	defer l.Close()
 
 	ok, r := l.DoString("function echo(...) return ... end")
@@ -26,7 +26,7 @@ func TestDoString(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
-	l := NewL()
+	l := NewLua()
 	defer l.Close()
 
 	ok, r := l.DoString("function echo(...) return ... end")
