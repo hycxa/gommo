@@ -25,19 +25,6 @@ import ()
 #define LUA_TTHREAD		8
 */
 
-const (
-	LUA_TNONE          = C.int(-1)
-	LUA_TNIL           = C.int(0)
-	LUA_TBOOLEAN       = C.int(1)
-	LUA_TLIGHTUSERDATA = C.int(2)
-	LUA_TNUMBER        = C.int(3)
-	LUA_TSTRING        = C.int(4)
-	LUA_TTABLE         = C.int(5)
-	LUA_TFUNCTION      = C.int(6)
-	LUA_TUSERDATA      = C.int(7)
-	LUA_TTHREAD        = C.int(8)
-)
-
 type L struct {
 	s *C.lua_State
 }
@@ -65,15 +52,15 @@ func (self *L) DoString(str string) (ret []interface{}) {
 
 	for i := C.int(0); i < cn; i++ {
 		t := C.lua_type(self.s, i)
-		println(t)
+		println("lua_type", t)
 		switch t {
-		case LUA_TNIL:
+		case C.LUA_TNIL:
 			ret[i] = nil
-		case LUA_TBOOLEAN:
+		case C.LUA_TBOOLEAN:
 			ret[i] = bool(C.lua_toboolean(self.s, i) != 0)
-		case LUA_TNUMBER:
+		case C.LUA_TNUMBER:
 			ret[i] = int64(C.lua_tonumberx(self.s, i, nil))
-		case LUA_TSTRING:
+		case C.LUA_TSTRING:
 			ret[i] = C.GoString(C.lua_tolstring(self.s, i, nil))
 		}
 	}
