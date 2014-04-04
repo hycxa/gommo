@@ -41,21 +41,24 @@ func (self *L) Close() {
 }
 
 func (self *L) DoString(str string) (ret []interface{}) {
+
+	//int n = lua_gettop(m_impl->L);
 	C.luaL_loadstring(self.s, C.CString(str))
 
 	cn := C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
 
 	println(cn)
 
+	//int retCount = lua_gettop(m_impl->L) - n;
 	n := int(cn)
 	ret = make([]interface{}, n)
 
-	for i := C.int(0); i < cn; i++ {
+	for i := C.int(-1); ; i-- {
 		t := C.lua_type(self.s, i)
 		println("lua_type", t)
 		switch t {
 		case C.LUA_TNIL:
-			ret[i] = nil
+
 		case C.LUA_TBOOLEAN:
 			ret[i] = bool(C.lua_toboolean(self.s, i) != 0)
 		case C.LUA_TNUMBER:
