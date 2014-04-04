@@ -41,20 +41,11 @@ func (self *L) Close() {
 	C.lua_close(self.s)
 }
 
-func (self *L) DoString(str string) (ret []interface{}) {
+func (self *L) getRetValue(args C.int) *[]interface{} {
+	ret := make([]interface{}, int(args))
 
-	oriCnt := C.lua_gettop(self.s)
-	C.luaL_loadstring(self.s, C.CString(str))
-
-	C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
-
-	n := C.lua_gettop(self.s) - oriCnt
-	ret = make([]interface{}, int(n))
-	println(n)
-
-	for i, index := C.int(1), 0; i <= n; i++ {
+	for i, index := C.int(1), 0; i <= args; i++ {
 		t := C.lua_type(self.s, i)
-		println("lua_type", t)
 		switch t {
 		case C.LUA_TNIL:
 			ret[index] = nil
@@ -79,12 +70,48 @@ func (self *L) DoString(str string) (ret []interface{}) {
 		}
 		index++
 	}
-	C.lua_settop(self.s, oriCnt)
+	return &ret
+}
 
+func (self *L) DoString(str string) (ret *[]interface{}) {
+
+	oriCnt := C.lua_gettop(self.s)
+	C.luaL_loadstring(self.s, C.CString(str))
+
+	C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
+	n := C.lua_gettop(self.s) - oriCnt
+	ret = self.getRetValue(n)
+	C.lua_settop(self.s, oriCnt)
 	return
 }
 
-func (self *L) Call(f string, v ...interface{}) (ret []interface{}) {
-	ret = make([]interface{}, 0)
+func (self *L) Call(f string, args ...interface{}) (ret *[]interface{}) {
+	oriCnt := C.lua_gettop(self.s)
+	C.lua_getglobal(self.s, C.CString(f))
+	nargs := 0
+	for _, v := range args {
+		switch v.(type) {
+		case int:
+			C.lua_pushinteger(self.s, C.lua_Integer(v.(int)))
+		case int64:
+			C.lua_pushinteger(self.s, C.lua_Integer(v.(int64)))
+		case string:
+			C.lua_pushlstring(self.s, C.CString(v.(string)), C.size_t(len(v.(string))))
+		case bool:
+			if v.(bool) {
+				C.lua_pushboolean(self.s, C.int(1))
+			} else {
+				C.lua_pushboolean(self.s, C.int(0))
+			}
+		default:
+			C.lua_pushnil(self.s)
+		}
+		nargs++
+	}
+
+	C.lua_pcallk(self.s, C.int(nargs), C.LUA_MULTRET, 0, 0, nil)
+	n := C.lua_gettop(self.s) - oriCnt
+	ret = self.getRetValue(n)
+	C.lua_settop(self.s, oriCnt)
 	return
 }
