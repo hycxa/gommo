@@ -1,8 +1,9 @@
 package lua
 
 /*
-#cgo CFLAGS: -I/opt/local/include/
-#cgo LDFLAGS: -llua -L/opt/local/lib
+//#cgo CFLAGS: -I/opt/local/include/
+#cgo LDFLAGS: -llua
+//-L/opt/local/lib
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -42,31 +43,43 @@ func (self *L) Close() {
 
 func (self *L) DoString(str string) (ret []interface{}) {
 
-	//int n = lua_gettop(m_impl->L);
+	oriCnt := C.lua_gettop(self.s)
 	C.luaL_loadstring(self.s, C.CString(str))
 
-	cn := C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
+	C.lua_pcallk(self.s, 0, C.LUA_MULTRET, 0, 0, nil)
 
-	println(cn)
+	n := C.lua_gettop(self.s) - oriCnt
+	ret = make([]interface{}, int(n))
+	println(n)
 
-	//int retCount = lua_gettop(m_impl->L) - n;
-	n := int(cn)
-	ret = make([]interface{}, n)
-
-	for i := C.int(-1); ; i-- {
+	for i, index := C.int(-1), 0; i >= -n; i-- {
 		t := C.lua_type(self.s, i)
 		println("lua_type", t)
 		switch t {
 		case C.LUA_TNIL:
-
+			ret[index] = nil
 		case C.LUA_TBOOLEAN:
-			ret[i] = bool(C.lua_toboolean(self.s, i) != 0)
+			ret[index] = bool(C.lua_toboolean(self.s, i) != 0)
 		case C.LUA_TNUMBER:
-			ret[i] = int64(C.lua_tonumberx(self.s, i, nil))
+			ret[index] = int64(C.lua_tonumberx(self.s, i, nil))
 		case C.LUA_TSTRING:
-			ret[i] = C.GoString(C.lua_tolstring(self.s, i, nil))
+			ret[index] = C.GoString(C.lua_tolstring(self.s, i, nil))
+		case C.LUA_TTABLE:
+			ret[index] = nil
+		case C.LUA_TFUNCTION:
+			ret[index] = nil
+		case C.LUA_TUSERDATA:
+			ret[index] = nil
+		case C.LUA_TTHREAD:
+			ret[index] = nil
+		case C.LUA_TLIGHTUSERDATA:
+			ret[index] = nil
+		default:
+			ret[index] = nil
 		}
+		index++
 	}
+	C.lua_settop(self.s, oriCnt)
 
 	return
 }
