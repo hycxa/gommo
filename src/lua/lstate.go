@@ -6,10 +6,17 @@ package lua
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+
+int openlibs(lua_State* L) {
+ 	luaL_openlibs(L);
+ 	return 0;
+}
 */
 import "C"
 
-import ()
+import (
+	"ext"
+)
 
 /*
 #define LUA_TNONE		(-1)
@@ -29,10 +36,11 @@ type L struct {
 	s *C.lua_State
 }
 
-func NewL() *L {
+func NewLua() *L {
 	l := new(L)
 	l.s = C.luaL_newstate()
-	C.luaL_openlibs(l.s)
+	C.lua_pushcclosure(l.s, C.lua_CFunction(C.openlibs), 0)
+	ext.Assert(C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0, "luaL_openlibs failed, not enough memory.")
 	return l
 }
 
@@ -65,8 +73,17 @@ func value(s *C.lua_State, i C.int) interface{} {
 	return nil
 }
 
-func (l *L) DoString(str string) (ok bool, ret []interface{}) {
+func (l *L) getRetValue(args C.int) []interface{} {
+	ret := make([]interface{}, int(args))
 
+	for i, index := C.int(1), 0; i <= args; i++ {
+		ret[index] = value(l.s, i)
+		index++
+	}
+	return ret
+}
+
+func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.luaL_loadstring(l.s, C.CString(str))
 
@@ -75,19 +92,44 @@ func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	} else {
 		ok = false
 	}
-
 	retCnt := C.lua_gettop(l.s) - n
-	ret = make([]interface{}, int(retCnt))
-
-	for i := C.int(0); i < retCnt; i++ {
-		ret[i] = value(l.s, i+1)
-	}
+	ret = l.getRetValue(retCnt)
 	C.lua_settop(l.s, n)
-
 	return
 }
 
-func (l *L) Call(f string, v ...interface{}) (ok bool, ret []interface{}) {
-	ret = make([]interface{}, 0)
+func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
+	n := C.lua_gettop(l.s)
+	C.lua_getglobal(l.s, C.CString(f))
+
+	nargs := C.int(len(args))
+	ext.Assert(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
+	for _, v := range args {
+		switch v.(type) {
+		case int:
+			C.lua_pushinteger(l.s, C.lua_Integer(v.(int)))
+		case int64:
+			C.lua_pushinteger(l.s, C.lua_Integer(v.(int64)))
+		case string:
+			C.lua_pushlstring(l.s, C.CString(v.(string)), C.size_t(len(v.(string))))
+		case bool:
+			if v.(bool) {
+				C.lua_pushboolean(l.s, C.int(1))
+			} else {
+				C.lua_pushboolean(l.s, C.int(0))
+			}
+		default:
+			C.lua_pushnil(l.s)
+		}
+	}
+
+	if C.lua_pcallk(l.s, nargs, C.LUA_MULTRET, 0, 0, nil) == C.LUA_OK {
+		ok = true
+	} else {
+		ok = false
+	}
+	retCnt := C.lua_gettop(l.s) - n
+	ret = l.getRetValue(retCnt)
+	C.lua_settop(l.s, n)
 	return
 }
