@@ -45,6 +45,7 @@ var da *M
 func (self *routine) run(t *testing.T) {
 	for {
 		runtime.Gosched()
+		fmt.Println("================")
 		ext.AssertT(t, self.Config.Get("one")[0]["name"] == "one", "")
 	}
 }
@@ -52,8 +53,8 @@ func (self *routine) run(t *testing.T) {
 func (self *routine) setConfig(con *Config) {
 	self.Config = con
 }
-
-/*func TestCfg(t *testing.T) {
+/*
+func TestCfg(t *testing.T) {
 
 	p1 := new(routine)
 	p2 := new(routine)
@@ -97,8 +98,8 @@ func (self *routine) setConfig(con *Config) {
 	con.Close()
 	ext.AssertT(t, con.Get("one")[0]["name"] == "hello", "")
 }
-
 */
+
 func modify(t *testing.T) {
 	session, err := mgo.Dial("t4f-mam-13141.local")
 	if err != nil {
