@@ -25,6 +25,8 @@ import ()
 #define LUA_TTHREAD		8
 */
 
+import "reflect"
+
 type L struct {
 	s *C.lua_State
 }
@@ -38,6 +40,35 @@ func NewLua() *L {
 
 func (l *L) Close() {
 	C.lua_close(l.s)
+}
+
+func parseTable(s *C.lua_State, i C.int, retMap map[interface{}]interface{}) {
+	C.lua_pushvalue(s, i)
+	C.lua_pushnil(s)
+
+	keyIndex := C.int(-2)
+	valueIndex := C.int(-1)
+
+	for int(C.lua_next(s, keyIndex)) != 0 {
+		var key interface{}
+
+		kt := C.lua_type(s, keyIndex)
+		switch kt {
+		case C.LUA_TBOOLEAN:
+			key = bool(C.lua_toboolean(s, keyIndex) != 0)
+		case C.LUA_TNUMBER:
+			key = int64(C.lua_tonumberx(s, keyIndex, nil))
+		case C.LUA_TSTRING:
+			key = C.GoString(C.lua_tolstring(s, keyIndex, nil))
+		default:
+			return
+		}
+
+		retMap[key] = value(s, valueIndex)
+
+		C.lua_settop(s, -2)
+	}
+	C.lua_settop(s, -2)
 }
 
 func value(s *C.lua_State, i C.int) interface{} {
@@ -54,7 +85,9 @@ func value(s *C.lua_State, i C.int) interface{} {
 	case C.LUA_TSTRING:
 		return C.GoString(C.lua_tolstring(s, i, nil))
 	case C.LUA_TTABLE:
-		return nil
+		retMap := make(map[interface{}]interface{})
+		parseTable(s, i, retMap)
+		return retMap
 	case C.LUA_TFUNCTION:
 		return nil
 	case C.LUA_TUSERDATA:
@@ -90,27 +123,58 @@ func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	return
 }
 
+func pushTable(l *L, v reflect.Value) {
+	C.lua_createtable(l.s, 0, 0)
+	for i := 0; i < v.Len(); i++ {
+		pushValue(l, i+1)
+		pushValue(l, v.Index(i).Interface())
+		C.lua_settable(l.s, -3)
+	}
+}
+
+func pushMap(l *L, v reflect.Value) {
+	C.lua_createtable(l.s, 0, 0)
+	keys := v.MapKeys()
+	for i := 0; i < len(keys); i++ {
+		pushValue(l, keys[i].Interface())
+		pushValue(l, v.MapIndex(keys[i]).Interface())
+		C.lua_settable(l.s, -3)
+	}
+}
+
+func pushValue(l *L, v interface{}) {
+	switch v.(type) {
+	case int:
+		C.lua_pushinteger(l.s, C.lua_Integer(v.(int)))
+	case int64:
+		C.lua_pushinteger(l.s, C.lua_Integer(v.(int64)))
+	case string:
+		C.lua_pushlstring(l.s, C.CString(v.(string)), C.size_t(len(v.(string))))
+	case bool:
+		if v.(bool) {
+			C.lua_pushboolean(l.s, C.int(1))
+		} else {
+			C.lua_pushboolean(l.s, C.int(0))
+		}
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Slice:
+			pushTable(l, rv)
+		case reflect.Map:
+			pushMap(l, rv)
+		default:
+			C.lua_pushnil(l.s)
+		}
+	}
+}
+
 func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.lua_getglobal(l.s, C.CString(f))
 	nargs := 0
 	for _, v := range args {
-		switch v.(type) {
-		case int:
-			C.lua_pushinteger(l.s, C.lua_Integer(v.(int)))
-		case int64:
-			C.lua_pushinteger(l.s, C.lua_Integer(v.(int64)))
-		case string:
-			C.lua_pushlstring(l.s, C.CString(v.(string)), C.size_t(len(v.(string))))
-		case bool:
-			if v.(bool) {
-				C.lua_pushboolean(l.s, C.int(1))
-			} else {
-				C.lua_pushboolean(l.s, C.int(0))
-			}
-		default:
-			C.lua_pushnil(l.s)
-		}
+		pushValue(l, v)
 		nargs++
 	}
 

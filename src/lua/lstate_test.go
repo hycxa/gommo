@@ -2,6 +2,7 @@ package lua
 
 import (
 	"ext"
+	"fmt"
 	"testing"
 )
 
@@ -30,15 +31,37 @@ func TestCall(t *testing.T) {
 	l := NewLua()
 	defer l.Close()
 
-	ok, r := l.DoString("function echo(...) return ... end")
+	ok, r := l.DoString(`function echo(...)
+		return ... 
+	end`)
 	ext.AssertT(t, ok && len(r) == 0, "dostring error")
 
-	ok, r = l.Call("echo", 4, "def ghit", true, "quit")
-	ext.AssertT(t, ok && len(r) == 4, "call error")
+	tab := make([]int, 5)
+	tab[0] = 5
+	tab[1] = 3
+	tab[2] = 2
+	tab[3] = 1
+	tab[4] = 4
+
+	mmap := make(map[int]int)
+	mmap[1] = 22
+	mmap[8] = 7
+	mmap[9] = 16
+	mmap[5] = 33
+
+	ok, r = l.Call("echo", 4, "def ghit", true, tab, "quit", mmap)
+	ext.AssertT(t, ok && len(r) == 6, "call error")
 	ext.AssertT(t, 4 == r[0].(int64), "return 1 error")
 	ext.AssertT(t, "def ghit" == r[1].(string), "return 2 error")
 	ext.AssertT(t, true == r[2].(bool), "return 3 error")
-	ext.AssertT(t, "quit" == r[3].(string), "return 4 error")
+	ext.AssertT(t, "quit" == r[4].(string), "return 5 error")
+	fmt.Println(r[3])
+	fmt.Println(r[5])
+
+	retTab := r[3].(map[int]int)
+	for i := 0; i < len(tab); i++ {
+		ext.AssertT(t, tab[i] == retTab[i], "return tab error")
+	}
 }
 
 func BenchmarkCallEff1(b *testing.B) {
@@ -61,7 +84,7 @@ func BenchmarkCallEff2(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		l.Call("echo", "hello")
+		l.Call("echo", "abc")
 	}
 }
 
