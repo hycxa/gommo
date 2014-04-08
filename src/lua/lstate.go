@@ -40,7 +40,7 @@ func NewLua() *L {
 	l := new(L)
 	l.s = C.luaL_newstate()
 	C.lua_pushcclosure(l.s, C.lua_CFunction(C.openlibs), 0)
-	ext.AssertM(C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0, "luaL_openlibs failed, not enough memory.")
+	ext.Assert(C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0, "luaL_openlibs failed, not enough memory.")
 	return l
 }
 
@@ -103,7 +103,7 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	C.lua_getglobal(l.s, C.CString(f))
 
 	nargs := C.int(len(args))
-	ext.AssertM(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
+	ext.Assert(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
 	for _, v := range args {
 		switch v.(type) {
 		case int:
