@@ -64,7 +64,7 @@ func TestCall(t *testing.T) {
 	}
 }
 
-func BenchmarkCallEff1(b *testing.B) {
+func BenchmarkCallEffInt(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
 
@@ -76,7 +76,7 @@ func BenchmarkCallEff1(b *testing.B) {
 	}
 }
 
-func BenchmarkCallEff2(b *testing.B) {
+func BenchmarkCallEffStr(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
 
@@ -88,7 +88,7 @@ func BenchmarkCallEff2(b *testing.B) {
 	}
 }
 
-func BenchmarkCallEff3(b *testing.B) {
+func BenchmarkCallEffBool(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
 
@@ -100,7 +100,7 @@ func BenchmarkCallEff3(b *testing.B) {
 	}
 }
 
-func BenchmarkCallEff4(b *testing.B) {
+func BenchmarkCallEffBaseComplex(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
 
@@ -109,5 +109,39 @@ func BenchmarkCallEff4(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		l.Call("echo", 1, "testecho", true)
+	}
+}
+
+func BenchmarkCallEffSlice(b *testing.B) {
+	l := NewLua()
+	defer l.Close()
+
+	l.DoString("function echo(...) return ... end")
+	tab := make([]int, 5)
+	tab[0] = 5
+	tab[1] = 3
+	tab[2] = 2
+	tab[3] = 1
+	tab[4] = 4
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l.Call("echo", tab)
+	}
+}
+
+func BenchmarkCallEffMap(b *testing.B) {
+	l := NewLua()
+	defer l.Close()
+
+	l.DoString("function echo(...) return ... end")
+	mmap := make(map[int]int)
+	mmap[1] = 22
+	mmap[8] = 7
+	mmap[9] = 16
+	mmap[5] = 33
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l.Call("echo", mmap)
 	}
 }

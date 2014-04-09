@@ -54,8 +54,6 @@ func parseTable(s *C.lua_State, i C.int, retMap map[interface{}]interface{}) {
 
 		kt := C.lua_type(s, keyIndex)
 		switch kt {
-		case C.LUA_TBOOLEAN:
-			key = bool(C.lua_toboolean(s, keyIndex) != 0)
 		case C.LUA_TNUMBER:
 			key = int64(C.lua_tonumberx(s, keyIndex, nil))
 		case C.LUA_TSTRING:
@@ -188,3 +186,4 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	C.lua_settop(l.s, n)
 	return
 }
+
