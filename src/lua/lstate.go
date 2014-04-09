@@ -6,10 +6,17 @@ package lua
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+
+int openlibs(lua_State* L) {
+ 	luaL_openlibs(L);
+ 	return 0;
+}
 */
 import "C"
 
-import ()
+import (
+	"ext"
+)
 
 /*
 #define LUA_TNONE		(-1)
@@ -34,7 +41,8 @@ type L struct {
 func NewLua() *L {
 	l := new(L)
 	l.s = C.luaL_newstate()
-	C.luaL_openlibs(l.s)
+	C.lua_pushcclosure(l.s, C.lua_CFunction(C.openlibs), 0)
+	ext.Assert(C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0, "luaL_openlibs failed, not enough memory.")
 	return l
 }
 
@@ -170,13 +178,14 @@ func pushValue(l *L, v interface{}) {
 func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.lua_getglobal(l.s, C.CString(f))
-	nargs := 0
+
+	nargs := C.int(len(args))
+	ext.Assert(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
 	for _, v := range args {
 		pushValue(l, v)
-		nargs++
 	}
 
-	if C.lua_pcallk(l.s, C.int(nargs), C.LUA_MULTRET, 0, 0, nil) == C.LUA_OK {
+	if C.lua_pcallk(l.s, nargs, C.LUA_MULTRET, 0, 0, nil) == C.LUA_OK {
 		ok = true
 	} else {
 		ok = false

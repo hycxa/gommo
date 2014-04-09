@@ -5,13 +5,7 @@ import (
 	"testing"
 )
 
-func Assert(condition bool) {
-	if !condition {
-		panic("assert failed")
-	}
-}
-
-func AssertM(condition bool, f string, v ...interface{}) {
+func Assert(condition bool, f string, v ...interface{}) {
 	if !condition {
 		panic(fmt.Sprintf(f, v...))
 	}

@@ -19,23 +19,22 @@ type Config struct {
 
 func NewConfig() *Config {
 
+
 	cfg := new(Config)
-	cfg.Process = god.NewProcess(cfg)
+	n1 := god.NewNode("n1", "tcp", "127.0.0.1:2009",god.NODE_GS_TYPE)
+	cfg.Process = god.NewProcess(n1,*cfg)
 	cfg.init()
 	return cfg
 }
 
-func (self *Config) Handle(pID proto.PacketID, data god.Marshaler) (retID proto.PacketID, ret god.Marshaler, err error) {
-
+func (self *Config) Handler(pID proto.PacketID, m proto.Message)  (err error) {
+	data :=m.Data
 	info := data.(proto.CfgFlush)
 	result := proto.CfgRsp{false}
 	self.Dial(info.Url)
 	self.UseDB(info.Db)
 	result.State = self.Load(info.Modem)
-
-	ret = result
-
-	return proto.CFG_FLUSH_RSP, ret, nil
+	return nil
 }
 func (self *Config) init() {
 	self.Mlist = make(map[string]M)

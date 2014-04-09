@@ -2,13 +2,22 @@ package lua
 
 import (
 	"ext"
-	"fmt"
 	"testing"
 )
 
-func TestNewState(t *testing.T) {
+func TestNewLua(t *testing.T) {
 	l := NewLua()
 	l.Close()
+}
+
+func BenchmarkNewLua(b *testing.B) {
+	l := make([]*L, b.N)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l[i] = NewLua()
+		//defer l[i].Close()
+	}
 }
 
 func TestDoString(t *testing.T) {
@@ -55,13 +64,13 @@ func TestCall(t *testing.T) {
 	ext.AssertT(t, "def ghit" == r[1].(string), "return 2 error")
 	ext.AssertT(t, true == r[2].(bool), "return 3 error")
 	ext.AssertT(t, "quit" == r[4].(string), "return 5 error")
-	fmt.Println(r[3])
-	fmt.Println(r[5])
 
+	/*
 	retTab := r[3].(map[int]int)
 	for i := 0; i < len(tab); i++ {
 		ext.AssertT(t, tab[i] == retTab[i], "return tab error")
 	}
+	*/
 }
 
 func BenchmarkCallEffInt(b *testing.B) {
