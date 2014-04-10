@@ -73,6 +73,51 @@ func TestCall(t *testing.T) {
 	*/
 }
 
+func TestCallCAndLua(t *testing.T) {
+	l := NewLua()
+	defer l.Close()
+	l.InstallFunc()
+
+	ok, r := l.DoString(`function echo()
+		a = array.new(3, 5)
+		assert(a:getx() == 3)
+		assert(a:gety() == 5)
+		a:setx(88)
+		a:sety(99)
+		assert(a:getx() == 88)
+		assert(a:gety() == 99)
+	end`)
+	ext.AssertT(t, ok && len(r) == 0, "dostring error")
+
+	ok, r = l.Call("echo")
+	ext.AssertT(t, ok && len(r) == 0, "call error")
+}
+
+
+func BenchmarkCallEffCAndLua(b *testing.B) {
+	l := NewLua()
+	defer l.Close()
+	l.InstallFunc()
+
+	l.DoString(`
+		a = array.new(3, 5)
+		assert(a:getx() == 3)
+		assert(a:gety() == 5)
+	function echo()
+		a:setx(88)
+		a:sety(99)
+		assert(a:getx() == 88)
+		assert(a:gety() == 99)
+		b = array.new(4, 5)
+		return b
+	end`)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		l.Call("echo")
+	}
+}
+
 func BenchmarkCallEffInt(b *testing.B) {
 	l := NewLua()
 	defer l.Close()

@@ -6,16 +6,15 @@ package lua
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include "userdata.h"
 
-int openlibs(lua_State* L) {
- 	luaL_openlibs(L);
- 	return 0;
-}
 */
 import "C"
 
 import (
 	"ext"
+	"unsafe"
+	"reflect"
 )
 
 /*
@@ -32,7 +31,6 @@ import (
 #define LUA_TTHREAD		8
 */
 
-import "reflect"
 
 type L struct {
 	s *C.lua_State
@@ -44,6 +42,10 @@ func NewLua() *L {
 	C.lua_pushcclosure(l.s, C.lua_CFunction(C.openlibs), 0)
 	ext.Assert(C.lua_pcallk(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0, "luaL_openlibs failed, not enough memory.")
 	return l
+}
+
+func (l *L) InstallFunc() {
+	C.install_func(l.s)
 }
 
 func (l *L) Close() {
@@ -196,3 +198,76 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	return
 }
 
+//export TStt
+type TStt struct {
+	X int
+	Y int
+	Arr []int
+}
+
+//export TStt_new
+func TStt_new(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	//rt := unsafe.Pointer(C.lua_newuserdata(l, C.size_t(unsafe.Sizeof(TStt{}))))
+	rt := (*unsafe.Pointer)(C.lua_newuserdata(l, C.size_t(unsafe.Sizeof(&TStt{}))))
+	ptr := &TStt{}
+	*rt = unsafe.Pointer(ptr)
+	ptr.X = int(C.luaL_checkinteger(l, 1))
+	ptr.Y = int(C.luaL_checkinteger(l, 2))
+	ptr.Arr = make([]int, 3)
+	ptr.Arr[0] = 5
+	ptr.Arr[1] = ptr.X
+	ptr.Arr[2] = 10
+	C.lua_getfield(l, C.LUA_REGISTRYINDEX, C.CString("luaMetaArray"))
+	C.lua_setmetatable(l, -2)
+	return 1
+}
+
+//export TStt_setx
+func TStt_setx(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+	value := int(C.luaL_checkinteger(l, 2))
+
+	ptr.X = value
+	ptr.Arr[1] = value
+	return 0
+}
+
+//export TStt_sety
+func TStt_sety(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+	value := int(C.luaL_checkinteger(l, 2))
+
+	ptr.Y = value
+	return 0
+}
+
+//export TStt_getx
+func TStt_getx(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+
+
+	C.lua_pushnumber(l, C.lua_Number(ptr.X))
+	C.lua_pushnumber(l, C.lua_Number(ptr.Arr[1]))
+
+	return 1
+}
+
+//export TStt_gety
+func TStt_gety(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+
+	//C.luaL_argcheck(l, NULL != a, 1, "'array' expected");
+
+	C.lua_pushnumber(l, C.lua_Number(ptr.Y))
+
+	return 1
+}
