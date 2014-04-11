@@ -41,7 +41,7 @@ func TestCall(t *testing.T) {
 	defer l.Close()
 
 	ok, r := l.DoString(`function echo(...)
-		return ... 
+		return ...
 	end`)
 	ext.AssertT(t, ok && len(r) == 0, "dostring error")
 
@@ -115,7 +115,7 @@ func BenchmarkCallEffCAndLua(b *testing.B) {
 }
 
 var testStr = `
-local luatobin = require("luatobin")
+local luatobin = require("lbin")
 local t = {
 	baggins = true,
 	age = 24,
@@ -211,8 +211,8 @@ func BenchmarkCallEffStr(b *testing.B) {
 	_, rs := l.CallRef(refEnc, nil)
 	s := string(rs)
 
-	l.DoString(`function echo(str) 
-	return str 
+	l.DoString(`function echo(str)
+	return str
 	end`)
 
 	b.ResetTimer()
@@ -235,4 +235,3 @@ func BenchmarkCallEffBool(b *testing.B) {
 		l.Call("echo", false)
 	}
 }
-
