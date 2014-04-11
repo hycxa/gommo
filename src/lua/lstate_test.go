@@ -103,10 +103,9 @@ func BenchmarkCallEffCAndLua(b *testing.B) {
 		assert(a:getx() == 3)
 		assert(a:gety() == 5)
 	function echo()
-		a:setx(88)
-		a:sety(99)
-		assert(a:getx() == 88)
-		assert(a:gety() == 99)
+		for i = 1, 1000 do
+			a:getx()
+		end
 	end`)
 
 	b.ResetTimer()
@@ -218,14 +217,10 @@ func BenchmarkCallEffStr(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		l.Call("echo", s)
-		/*
 		_, rt := l.Call("echo", s)
-		str := rt[0].(string)
-		b := bytes.NewBuffer(str)
-		b.Bytes()[0] = b.Bytes()[0] + 1
-		s = b.String()
-		*/
+		r := []rune(rt[0].(string))
+		r[len(r)-1] = r[len(r)-1] + 1
+		s = string(r)
 	}
 }
 
