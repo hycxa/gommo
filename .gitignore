@@ -28,3 +28,4 @@ doc/*.png
 *.exe
 .DS_Store
 .scons*
+*.orig
