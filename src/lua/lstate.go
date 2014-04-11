@@ -6,16 +6,15 @@ package lua
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include "userdata.h"
 
-int openlibs(lua_State* L) {
- 	luaL_openlibs(L);
- 	return 0;
-}
 */
 import "C"
 
 import (
 	"ext"
+	"unsafe"
+	"reflect"
 )
 
 /*
@@ -32,6 +31,7 @@ import (
 #define LUA_TTHREAD		8
 */
 
+
 type L struct {
 	s *C.lua_State
 }
@@ -44,8 +44,39 @@ func NewLua() *L {
 	return l
 }
 
+func (l *L) InstallFunc() {
+	C.install_func(l.s)
+}
+
 func (l *L) Close() {
 	C.lua_close(l.s)
+}
+
+func parseTable(s *C.lua_State, i C.int, retMap map[interface{}]interface{}) {
+	C.lua_pushvalue(s, i)
+	C.lua_pushnil(s)
+
+	keyIndex := C.int(-2)
+	valueIndex := C.int(-1)
+
+	for int(C.lua_next(s, keyIndex)) != 0 {
+		var key interface{}
+
+		kt := C.lua_type(s, keyIndex)
+		switch kt {
+		case C.LUA_TNUMBER:
+			key = int64(C.lua_tonumberx(s, keyIndex, nil))
+		case C.LUA_TSTRING:
+			key = C.GoString(C.lua_tolstring(s, keyIndex, nil))
+		default:
+			return
+		}
+
+		retMap[key] = value(s, valueIndex)
+
+		C.lua_settop(s, -2)
+	}
+	C.lua_settop(s, -2)
 }
 
 func value(s *C.lua_State, i C.int) interface{} {
@@ -62,7 +93,9 @@ func value(s *C.lua_State, i C.int) interface{} {
 	case C.LUA_TSTRING:
 		return C.GoString(C.lua_tolstring(s, i, nil))
 	case C.LUA_TTABLE:
-		return nil
+		retMap := make(map[interface{}]interface{})
+		parseTable(s, i, retMap)
+		return retMap
 	case C.LUA_TFUNCTION:
 		return nil
 	case C.LUA_TUSERDATA:
@@ -98,6 +131,52 @@ func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	return
 }
 
+func pushTable(l *L, v reflect.Value) {
+	C.lua_createtable(l.s, 0, 0)
+	for i := 0; i < v.Len(); i++ {
+		pushValue(l, i+1)
+		pushValue(l, v.Index(i).Interface())
+		C.lua_settable(l.s, -3)
+	}
+}
+
+func pushMap(l *L, v reflect.Value) {
+	C.lua_createtable(l.s, 0, 0)
+	keys := v.MapKeys()
+	for i := 0; i < len(keys); i++ {
+		pushValue(l, keys[i].Interface())
+		pushValue(l, v.MapIndex(keys[i]).Interface())
+		C.lua_settable(l.s, -3)
+	}
+}
+
+func pushValue(l *L, v interface{}) {
+	switch v.(type) {
+	case int:
+		C.lua_pushinteger(l.s, C.lua_Integer(v.(int)))
+	case int64:
+		C.lua_pushinteger(l.s, C.lua_Integer(v.(int64)))
+	case string:
+		C.lua_pushlstring(l.s, C.CString(v.(string)), C.size_t(len(v.(string))))
+	case bool:
+		if v.(bool) {
+			C.lua_pushboolean(l.s, C.int(1))
+		} else {
+			C.lua_pushboolean(l.s, C.int(0))
+		}
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Slice:
+			pushTable(l, rv)
+		case reflect.Map:
+			pushMap(l, rv)
+		default:
+			C.lua_pushnil(l.s)
+		}
+	}
+}
+
 func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	n := C.lua_gettop(l.s)
 	C.lua_getglobal(l.s, C.CString(f))
@@ -105,22 +184,7 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	nargs := C.int(len(args))
 	ext.Assert(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
 	for _, v := range args {
-		switch v.(type) {
-		case int:
-			C.lua_pushinteger(l.s, C.lua_Integer(v.(int)))
-		case int64:
-			C.lua_pushinteger(l.s, C.lua_Integer(v.(int64)))
-		case string:
-			C.lua_pushlstring(l.s, C.CString(v.(string)), C.size_t(len(v.(string))))
-		case bool:
-			if v.(bool) {
-				C.lua_pushboolean(l.s, C.int(1))
-			} else {
-				C.lua_pushboolean(l.s, C.int(0))
-			}
-		default:
-			C.lua_pushnil(l.s)
-		}
+		pushValue(l, v)
 	}
 
 	if C.lua_pcallk(l.s, nargs, C.LUA_MULTRET, 0, 0, nil) == C.LUA_OK {
@@ -132,4 +196,78 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	ret = l.getRetValue(retCnt)
 	C.lua_settop(l.s, n)
 	return
+}
+
+//export TStt
+type TStt struct {
+	X int
+	Y int
+	Arr []int
+}
+
+//export TStt_new
+func TStt_new(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	//rt := unsafe.Pointer(C.lua_newuserdata(l, C.size_t(unsafe.Sizeof(TStt{}))))
+	rt := (*unsafe.Pointer)(C.lua_newuserdata(l, C.size_t(unsafe.Sizeof(&TStt{}))))
+	ptr := &TStt{}
+	*rt = unsafe.Pointer(ptr)
+	ptr.X = int(C.luaL_checkinteger(l, 1))
+	ptr.Y = int(C.luaL_checkinteger(l, 2))
+	ptr.Arr = make([]int, 3)
+	ptr.Arr[0] = 5
+	ptr.Arr[1] = ptr.X
+	ptr.Arr[2] = 10
+	C.lua_getfield(l, C.LUA_REGISTRYINDEX, C.CString("luaMetaArray"))
+	C.lua_setmetatable(l, -2)
+	return 1
+}
+
+//export TStt_setx
+func TStt_setx(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+	value := int(C.luaL_checkinteger(l, 2))
+
+	ptr.X = value
+	ptr.Arr[1] = value
+	return 0
+}
+
+//export TStt_sety
+func TStt_sety(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+	value := int(C.luaL_checkinteger(l, 2))
+
+	ptr.Y = value
+	return 0
+}
+
+//export TStt_getx
+func TStt_getx(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+
+
+	C.lua_pushnumber(l, C.lua_Number(ptr.X))
+	C.lua_pushnumber(l, C.lua_Number(ptr.Arr[1]))
+
+	return 1
+}
+
+//export TStt_gety
+func TStt_gety(L unsafe.Pointer) C.int {
+	l := (*C.lua_State)(L)
+	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	ptr := (*TStt)(*a)
+
+	//C.luaL_argcheck(l, NULL != a, 1, "'array' expected");
+
+	C.lua_pushnumber(l, C.lua_Number(ptr.Y))
+
+	return 1
 }
