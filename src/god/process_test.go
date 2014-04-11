@@ -29,7 +29,7 @@ func Handle(id proto.PacketID, m *proto.Message) (err error) {
 		v := tv(d)
 		_ = v
 		//v.i++
-		return  nil
+		return nil
 	}
 	return errors.New("wrong type")
 }
@@ -52,5 +52,9 @@ func TestProcess(t *testing.T) {
 	for i := 0; i < 1; i++ {
 		n1.Notify(p1.UUID, p2.UUID, proto.PacketID(i), tv{i})
 	}
+
+}
+
+func TestLuaProcess(t *testing.T) {
 
 }
