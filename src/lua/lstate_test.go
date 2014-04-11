@@ -66,10 +66,10 @@ func TestCall(t *testing.T) {
 	ext.AssertT(t, "quit" == r[4].(string), "return 5 error")
 
 	/*
-	retTab := r[3].(map[int]int)
-	for i := 0; i < len(tab); i++ {
-		ext.AssertT(t, tab[i] == retTab[i], "return tab error")
-	}
+		retTab := r[3].(map[int]int)
+		for i := 0; i < len(tab); i++ {
+			ext.AssertT(t, tab[i] == retTab[i], "return tab error")
+		}
 	*/
 }
 
@@ -93,7 +93,6 @@ func TestCallCAndLua(t *testing.T) {
 	ext.AssertT(t, ok && len(r) == 0, "call error")
 }
 
-
 func BenchmarkCallEffCAndLua(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
@@ -108,13 +107,86 @@ func BenchmarkCallEffCAndLua(b *testing.B) {
 		a:sety(99)
 		assert(a:getx() == 88)
 		assert(a:gety() == 99)
-		b = array.new(4, 5)
-		return b
 	end`)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		l.Call("echo")
+	}
+}
+
+var testStr = `
+local luatobin = require("luatobin")
+local t = {
+	baggins = true,
+	age = 24,
+	name = 'dumbo' ,
+	ponies = {'whisper','fartarse'},
+	tt = 0,
+	father = {
+		baggins = false,
+		age = 77,
+		tt2 = 0,
+		name = 'Wombo',
+	}
+}
+
+function retEnc()
+return luatobin.serialize(t, false)
+end
+
+function dec(s)
+local to, to1 = luatobin.deserialize(s)
+assert(to1.name == t.name)
+assert(to1.father.age == t.father.age)
+to1.tt = to1.tt + 1
+return luatobin.serialize(to1, false)
+end`
+
+func TestLuaEnc(t *testing.T) {
+	l := NewLua()
+	defer l.Close()
+
+	l.DoString(testStr)
+
+	refEnc := l.GetRef("retEnc")
+	ok, rs := l.CallRef(refEnc, nil)
+	ext.AssertT(t, ok, "CallRef retEnc")
+
+	refDec := l.GetRef("dec")
+	ok, _ = l.CallRef(refDec, rs)
+	ext.AssertT(t, ok, "CallRef refDec")
+}
+
+func BenchmarkLuaEncTab(b *testing.B) {
+	l := NewLua()
+	defer l.Close()
+
+	l.DoString(testStr)
+	ok, rs := l.Call("retEnc")
+
+	ext.Assert(ok, "fffff")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, rs = l.Call("dec", rs)
+	}
+}
+
+func BenchmarkLuaEnc(b *testing.B) {
+	l := NewLua()
+	defer l.Close()
+
+	l.DoString(testStr)
+
+	refEnc := l.GetRef("retEnc")
+	ok, rs := l.CallRef(refEnc, nil)
+	ext.Assert(ok, "ffff")
+
+	refDec := l.GetRef("dec")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, rs = l.CallRef(refDec, rs)
 	}
 }
 
@@ -134,11 +206,26 @@ func BenchmarkCallEffStr(b *testing.B) {
 	l := NewLua()
 	defer l.Close()
 
-	l.DoString("function echo(...) return ... end")
+	l.DoString(testStr)
+
+	refEnc := l.GetRef("retEnc")
+	_, rs := l.CallRef(refEnc, nil)
+	s := string(rs)
+
+	l.DoString(`function echo(str) 
+	return str 
+	end`)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		l.Call("echo", "abc")
+		l.Call("echo", s)
+		/*
+		_, rt := l.Call("echo", s)
+		str := rt[0].(string)
+		b := bytes.NewBuffer(str)
+		b.Bytes()[0] = b.Bytes()[0] + 1
+		s = b.String()
+		*/
 	}
 }
 
