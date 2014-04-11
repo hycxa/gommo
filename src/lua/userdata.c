@@ -53,10 +53,15 @@ void install_func(lua_State *L)
 	lua_pushvalue(L, -2);
 	lua_settable(L, -3);
 
+	#if LUA_VERSION_NUM == 502
 	luaL_setfuncs(L, arraylib_m, 0);
 	
 	lua_newtable(L);
 	luaL_newlib(L, arraylib_f);
 	lua_setglobal(L, "array");
+	#elif LUA_VERSION_NUM == 501
+	luaL_register(L, NULL, arraylib_m);
+	luaL_register(L, "array", arraylib_f);
+	#endif
 }
 

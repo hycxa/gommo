@@ -16,7 +16,7 @@ func BenchmarkNewLua(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		l[i] = NewLua()
-		//defer l[i].Close()
+		l[i].Close()
 	}
 }
 
@@ -236,48 +236,3 @@ func BenchmarkCallEffBool(b *testing.B) {
 	}
 }
 
-func BenchmarkCallEffBaseComplex(b *testing.B) {
-	l := NewLua()
-	defer l.Close()
-
-	l.DoString("function echo(...) return ... end")
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		l.Call("echo", 1, "testecho", true)
-	}
-}
-
-func BenchmarkCallEffSlice(b *testing.B) {
-	l := NewLua()
-	defer l.Close()
-
-	l.DoString("function echo(...) return ... end")
-	tab := make([]int, 5)
-	tab[0] = 5
-	tab[1] = 3
-	tab[2] = 2
-	tab[3] = 1
-	tab[4] = 4
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		l.Call("echo", tab)
-	}
-}
-
-func BenchmarkCallEffMap(b *testing.B) {
-	l := NewLua()
-	defer l.Close()
-
-	l.DoString("function echo(...) return ... end")
-	mmap := make(map[int]int)
-	mmap[1] = 22
-	mmap[8] = 7
-	mmap[9] = 16
-	mmap[5] = 33
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		l.Call("echo", mmap)
-	}
-}
