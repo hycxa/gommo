@@ -6,6 +6,7 @@ package lua
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include <stdlib.h>
 #include "userdata.h"
 
 */
@@ -13,8 +14,8 @@ import "C"
 
 import (
 	"ext"
-	"unsafe"
 	"reflect"
+	"unsafe"
 )
 
 /*
@@ -30,7 +31,6 @@ import (
 #define LUA_TUSERDATA		7
 #define LUA_TTHREAD		8
 */
-
 
 type L struct {
 	s *C.lua_State
@@ -91,7 +91,8 @@ func value(s *C.lua_State, i C.int) interface{} {
 	case C.LUA_TNUMBER:
 		return int64(C.lua_tonumberx(s, i, nil))
 	case C.LUA_TSTRING:
-		return C.GoString(C.lua_tolstring(s, i, nil))
+		slen := C.lua_rawlen(s, i)
+		return C.GoStringN((C.lua_tolstring(s, i, &slen)), C.int(slen))
 	case C.LUA_TTABLE:
 		retMap := make(map[interface{}]interface{})
 		parseTable(s, i, retMap)
@@ -198,11 +199,64 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	return
 }
 
+func (l *L) GetRef(s string) C.int {
+	Cs := C.CString(s)
+	defer C.free(unsafe.Pointer(Cs))
+	//C.luaL_loadstring(l.s, Cs)
+	C.lua_getglobal(l.s, Cs)
+	return C.luaL_ref(l.s, C.LUA_REGISTRYINDEX)
+}
+
+func isStackFunc(s *C.lua_State, index C.int) bool {
+	return C.lua_type(s, index) == C.LUA_TFUNCTION
+}
+
+func (l *L) CallRef(funi C.int, args []byte) (ok bool, ret []byte) {
+	n := C.lua_gettop(l.s)
+	defer C.lua_settop(l.s, n)
+	C.lua_rawgeti(l.s, C.LUA_REGISTRYINDEX, funi)
+	if !isStackFunc(l.s, -1) {
+		return false, nil
+	}
+
+	nargs := C.int(0)
+	if args != nil {
+		nargs = 1
+		ext.Assert(C.lua_checkstack(l.s, nargs) != 0, "not enough free stack slots")
+		parg := C.CString(string(args))
+		defer C.free(unsafe.Pointer(parg))
+		C.lua_pushlstring(l.s, parg, C.size_t(len(args)))
+	}
+
+	if C.lua_pcallk(l.s, nargs, 1, 0, 0, nil) == C.LUA_OK {
+	} else {
+		return false, nil
+	}
+	retCnt := C.lua_gettop(l.s) - n
+	if retCnt > 0 {
+		retLength := C.lua_rawlen(l.s, 1)
+		r := C.lua_tolstring(l.s, 1, &retLength)
+		ret = C.GoBytes(unsafe.Pointer(r), C.int(retLength))
+	}
+	return true, ret
+}
+
+type LUserData interface {
+	PushStack(l *C.lua_State)
+}
+
 //export TStt
 type TStt struct {
-	X int
-	Y int
+	X   int
+	Y   int
 	Arr []int
+}
+
+func (d *TStt) PushStack(l *C.lua_State) {
+	rt := (*unsafe.Pointer)(C.lua_newuserdata(l, C.size_t(unsafe.Sizeof(d))))
+	*rt = unsafe.Pointer(d)
+	C.lua_getfield(l, C.LUA_REGISTRYINDEX, C.CString("luaMetaArray"))
+	C.lua_setmetatable(l, -2)
 }
 
 //export TStt_new
@@ -252,7 +306,6 @@ func TStt_getx(L unsafe.Pointer) C.int {
 	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
 	ptr := (*TStt)(*a)
 
-
 	C.lua_pushnumber(l, C.lua_Number(ptr.X))
 	C.lua_pushnumber(l, C.lua_Number(ptr.Arr[1]))
 
@@ -270,4 +323,13 @@ func TStt_gety(L unsafe.Pointer) C.int {
 	C.lua_pushnumber(l, C.lua_Number(ptr.Y))
 
 	return 1
+}
+
+//export TStt_gc
+func TStt_gc(L unsafe.Pointer) C.int {
+	//	l := (*C.lua_State)(L)
+	//	a := (*unsafe.Pointer)(C.luaL_checkudata(l, 1, C.CString("luaMetaArray")))
+	//	ptr := (*TStt)(*a)
+	//*ptr = nil
+	return 0
 }

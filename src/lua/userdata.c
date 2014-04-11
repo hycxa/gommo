@@ -9,23 +9,27 @@ int openlibs(lua_State* L) {
  	return 0;
 }
 
-static int newarray (lua_State *l){
+int newarray (lua_State *l){
 	return TStt_new(l);	
 }
-static int setx(lua_State *l) {
+int setx(lua_State *l) {
 	return TStt_setx(l);
 }
 
-static int sety(lua_State *l) {
+int sety(lua_State *l) {
 	return TStt_sety(l);
 }
 
-static int getx(lua_State *l) {
+int getx(lua_State *l) {
 	return TStt_getx(l);
 }
 
-static int gety(lua_State *l) {
+int gety(lua_State *l) {
 	return TStt_gety(l);
+}
+
+int gc(lua_State *l) {
+	return TStt_gc(l);
 }
 
 static const struct luaL_Reg arraylib_f[] = {
@@ -38,6 +42,7 @@ static const struct luaL_Reg arraylib_m[] = {
 	{"sety", sety},
 	{"getx", getx},
 	{"gety", gety},
+	{"__gc", gc},
 	{NULL, NULL}
 };
 
