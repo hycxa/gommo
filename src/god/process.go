@@ -5,14 +5,18 @@ import (
 	"proto"
 )
 
+type PID proto.UUID
+
 type Process struct {
-	Handler
-	proto.UUID
-	mq   chan proto.Message
-	quit chan int
+	m Messenger
+	h Handler
+	PID
+	observer PID
+	mq       chan proto.Message
+	quit     chan int
 }
 
-func NewProcess(node *Node, h Handler) *Process {
+func NewProcess(m Messenger, h Handler, observer PID) *Process {
 	o := new(Process)
 	o.UUID.New()
 	o.Handler = h
