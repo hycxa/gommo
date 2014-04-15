@@ -7,7 +7,14 @@ import (
 
 type PID proto.UUID
 
-type Process struct {
+type Processor interface {
+	pid() PID
+	notify(proto.Message) (ok, error)
+	call(proto.Message) (ok, proto.Message)
+}
+
+type process struct {
+	Processor
 	m Messenger
 	h Handler
 	PID
@@ -16,8 +23,8 @@ type Process struct {
 	quit     chan int
 }
 
-func NewProcess(m Messenger, h Handler, observer PID) *Process {
-	o := new(Process)
+func NewProcess(m Messenger, h Handler, observer PID) *process {
+	o := new(process)
 	o.UUID.New()
 	o.Handler = h
 	o.mq = make(chan proto.Message)

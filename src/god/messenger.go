@@ -5,6 +5,8 @@ import (
 )
 
 type Messenger interface {
-	Notify(UUID, Message) (ok, error)
-	Call(UUID, Message) (ok, Message)
+	Notify(PID, proto.Message) (ok, error)
+	Call(PID, proto.Message) (ok, proto.Message)
+	Add(Processor)
+	Remove(Processor)
 }

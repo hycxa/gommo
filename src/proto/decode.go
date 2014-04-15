@@ -18,10 +18,16 @@ func EncodeMsg(buff *bytes.Buffer, msg *Message) bool {
 		return false
 	}
 	switch msg.PackID {
+	case LUA_TRANSFER_DATA:
+		err = enc.Encode(msg.Data.(LuaTransferData))
 	case XX1:
 		err = enc.Encode(msg.Data.(Teq))
 	case XX2:
 		err = enc.Encode(msg.Data.(Teq))
+	case CFG_FLUSH_REQ:
+		err = enc.Encode(msg.Data.(CfgFlush))
+	case CFG_FLUSH_RSP:
+		err = enc.Encode(msg.Data.(CfgRsp))
 	case XX3:
 		err = enc.Encode(msg.Data.(Teq2))
 	case XX4:
@@ -50,12 +56,24 @@ func DecodeMsg(buff *bytes.Buffer) (bool, *Message) {
 		return false, nil
 	}
 	switch msg.PackID {
+	case LUA_TRANSFER_DATA:
+		var data LuaTransferData
+		err = dec.Decode(&data)
+		msg.Data = data
 	case XX1:
 		var data Teq
 		err = dec.Decode(&data)
 		msg.Data = data
 	case XX2:
 		var data Teq
+		err = dec.Decode(&data)
+		msg.Data = data
+	case CFG_FLUSH_REQ:
+		var data CfgFlush
+		err = dec.Decode(&data)
+		msg.Data = data
+	case CFG_FLUSH_RSP:
+		var data CfgRsp
 		err = dec.Decode(&data)
 		msg.Data = data
 	case XX3:

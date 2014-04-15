@@ -3,6 +3,13 @@ package proto
 // name 全部大写
 //结构体自动首字母大写
 
+type LuaTransferData struct {
+	bindata []byte
+} /*
+name:LUA_TRANSFER_DATA
+desc: transfer lua data
+*/
+
 type Teq struct {
 	X int
 	Y int

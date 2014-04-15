@@ -11,7 +11,7 @@ type Marshaler interface {
 }
 
 type Handler interface {
-	Handle(packID proto.PacketID, data *proto.Message) error
+	Handle(packID proto.PacketID, data *proto.Message) (error, []byte)
 }
 
 // func (m Marshaler) MarshalBinary() ([]byte, error) {
