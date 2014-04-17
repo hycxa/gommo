@@ -23,7 +23,7 @@ func new_process(node *Node, name string) *process {
 	return p
 }
 
-func Handle(id proto.PacketID, m *proto.Message) (err error) {
+func Handle(m *proto.Message) (err error) {
 	switch d := m.Data.(type) {
 	case tv:
 		v := tv(d)
@@ -34,10 +34,10 @@ func Handle(id proto.PacketID, m *proto.Message) (err error) {
 	return errors.New("wrong type")
 }
 
-func (p *process) Handle(id proto.PacketID, m *proto.Message) (err error) {
+func (p *process) Handle(m *proto.Message) (err error) {
 	defer ext.UT(ext.T("process::Handle"))
 	//ext.Debugf("P[%s]%#v\n", p.Name, m)
-	return Handle(id, m)
+	return Handle(m)
 }
 
 func TestProcess(t *testing.T) {

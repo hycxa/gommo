@@ -28,5 +28,5 @@ type Message struct {
 	Sender   UUID
 	Reciever UUID
 	Data     interface{}
-	PackID   PacketID
+	PacketID
 }

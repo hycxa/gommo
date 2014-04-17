@@ -220,7 +220,7 @@ func (self *Node) Notify(source proto.UUID, target proto.UUID, packetID proto.Pa
 	if !ok1 && !ok2 {
 		return fmt.Errorf("Target %v is not found!", target)
 	}
-	m := proto.Message{Sender: source, Data: data, PackID: packetID}
+	m := proto.Message{Sender: source, Data: data, PacketID: packetID}
 
 	if ok1 {
 		t.mq <- m

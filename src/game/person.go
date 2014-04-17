@@ -15,6 +15,6 @@ func NewPerson(node *god.Node) *Person {
 	return p
 }
 
-func (p *Person) Handle(pID proto.PacketID, data *proto.Message) (err error) {
+func (p *Person) Handle(data *proto.Message) (err error) {
 	return  nil
 }

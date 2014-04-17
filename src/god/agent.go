@@ -5,13 +5,14 @@ import (
 	"ext"
 	"io"
 	"net"
+	"time"
 )
 
 type Agent struct {
 	*process
 	Messenger
-	nFun     NotifyFun
-	conn     net.Conn
+	nFun NotifyFun
+	conn net.Conn
 }
 
 type agentHandler struct {
@@ -42,12 +43,11 @@ func (a *Agent) run() {
 	header := make([]byte, 2)
 
 	for {
-		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
+		a.conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err := io.ReadFull(a.conn, header)
 		ext.AssertE(err)
 
 		data := make([]byte, BYTE_ORDER.Uint16(header))
-		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
 		_, err = io.ReadFull(a.conn, data)
 		ext.AssertE(err)
 
@@ -59,6 +59,6 @@ func (a *Agent) run() {
 	}
 }
 
-func (a *agentHandler) Handle(packID proto.PacketID, data *proto.Message) error {
+func (a *agentHandler) Handle(data *proto.Message) error {
 	return nil
 }

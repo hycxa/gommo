@@ -23,7 +23,7 @@ type NodeInfo struct {
 }
 
 type Handler interface {
-	Handle(packID proto.PacketID, data *proto.Message) error
+	Handle(data *proto.Message) error
 }
 
 type NotifyFun interface {

@@ -5,6 +5,7 @@ import (
 	"ext"
 	"net"
 	"proto"
+	"sync"
 	"time"
 )
 
@@ -14,12 +15,8 @@ type Remote struct {
 	conn      net.Conn
 	nodeAddr  string
 	objs      map[PID]string
+	mutex     sync.Mutex
 	msgBuffer chan *proto.Message
-}
-
-type OperateObjs interface {
-	AddRemoteObj(*proto.Message)
-	RemoveRemoteObj(*proto.Message)
 }
 
 type SendObjsInfo struct {
@@ -27,13 +24,8 @@ type SendObjsInfo struct {
 	Objs     []PID
 }
 
-type RemoteHandler struct {
-	OperateObjs
-}
-
-func NewRemote(mes Messenger, conn net.Conn) Processor {
+func NewRemote(mes Messenger, conn net.Conn) *Remote {
 	r := new(Remote)
-	r.process = NewProcess(m, new(RemoteHandler{r}), nil)
 	r.mes = mes
 	r.objs = make(map[PID]string, 100)
 	r.msgBuffer = make(chan *proto.Message, CHAN_BUFF_NUM)
@@ -94,6 +86,31 @@ func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo, selfObjs []PID) *SendObjsInf
 	return &retObjs
 }
 
+func (r *Remote) AddRemoteObj(msg *proto.Message) {
+	r.mutex.Lock()
+	r.objs[msg.Data.UUID] = ""
+	r.mutex.UnLock()
+}
+
+func (r *Remote) RemoveRemoteObj(msg *proto.Message) {
+	r.mutex.Lock()
+	r.objs[msg.Data.UUID] = nil
+	r.mutex.UnLock()
+}
+
+func (r *Remote) dealNetMsg(msg *proto.Message) {
+	switch msg.PacketID {
+	case proto.PROCESS_ADD_OR_REMOVE:
+		if msg.Data.IsAdd {
+			r.AddRemoteObj(msg)
+		} else {
+			r.RemoveRemoteObj(msg)
+		}
+	default:
+		r.mes.Notify(msg.Reciever, msg)
+	}
+}
+
 func (r *Remote) readRun() {
 	defer r.conn.Close()
 	header := make([]byte, 2)
@@ -110,7 +127,7 @@ func (r *Remote) readRun() {
 		b := bytes.NewBuffer(data)
 		ok, msg := proto.DecodeMsg(b)
 		if ok {
-			r.mes.Notify(msg.Reciever, &msg)
+			r.dealNetMsg(msg)
 		}
 	}
 }
@@ -132,38 +149,19 @@ func (r *Remote) writeRun() {
 			}
 		}
 	}
-
 }
 
-func (r *Remote) proNotify(msg *proto.Message) error {
-	if msg.Reciever == r.pid() {
-		return r.processor.proNotify(packID, data)
-	} else {
+func (r *Remote) remoteNofity(msg *proto.Message) bool {
+	if msg.PacketID == proto.PROCESS_ADD_OR_REMOVE {
 		r.msgBuffer <- msg
-		return nil
-	}
-}
-
-func (r *Remote) proCall(msg *proto.Message) (error, *proto.Message) {
-	if msg.Reciever == r.pid() {
-		return r.processor.proCall(packID, data)
+		return true
 	} else {
-		r.msgBuffer <- msg
-		return nil, nil
+		r.mutex.Lock()
+		ok, _ = r.objs[msg.Reciever]
+		r.mutex.UnLock()
+		if ok {
+			r.msgBuffer <- msg
+		}
+		return ok
 	}
-}
-
-func (r *Remote) AddRemoteObj(msg *proto.Message) {
-
-}
-
-func (r *Remote) RemoveRemoteObj(msg *proto.Message) {
-
-}
-
-func (r *RemoteHandler) Handle(packID proto.PacketID, data *proto.Message) {
-	//TODO remote process add or remove
-	//r.AddRemoteObj(data)
-	//r.RemoveRemoteObj(data)
-	return nil
 }

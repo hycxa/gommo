@@ -9,15 +9,15 @@ import (
 
 type Worker struct {
 	*lua.L
-	processFunRef C.int
-	mq            chan *proto.Message
+	proFunRef C.int
+	mq        chan *proto.Message
 }
 
 func NewWorker() *Worker {
 	w := new(Worker)
 	w.L = lua.NewLua()
 	//TODO load lua file
-	w.processFunRef = w.L.GetRef("Process")
+	w.proFunRef = w.L.GetRef("Process")
 	w.mq = make(chan *proto.Message, CHAN_BUFF_NUM)
 	go w.run()
 	return w
@@ -38,9 +38,9 @@ func (w *Worker) run() {
 }
 
 func (w *Worker) postMsg(data *proto.Message) error {
-	ok, _ := w.L.CallRef(w.processFunRef, data.Data)
+	ok, _ := w.L.CallRef(w.proFunRef, data.Data)
 	if !ok {
-		err := errors.New("Handle packetID:%v error", data.PackID)
+		err := errors.New("Handle packetID:%v error", data.Data.PacketID)
 		return err
 	} else {
 		return nil
@@ -51,6 +51,3 @@ func (w *Worker) notify(data *proto.Message) {
 	w.mq <- data
 }
 
-func (w *Worker) call() {
-	w.mq <- data
-}

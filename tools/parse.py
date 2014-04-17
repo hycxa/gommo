@@ -122,12 +122,12 @@ def gen_go_packet(packet_list):
 	            checkErr(err)	
                 return false
 	        }
-            err = enc.Encode(msg.PackID)
+            err = enc.Encode(msg.PacketID)
             if err != nil {
                 checkErr(err)
                 return false
             }
-            switch msg.PackID {\n""")
+            switch msg.PacketID {\n""")
 
     for item in packet_list:
         decodef.write("case %s:\nerr = enc.Encode(msg.Data.(%s))\n" %(item.name, item.payload))
@@ -152,12 +152,12 @@ def gen_go_packet(packet_list):
                 checkErr(err)
                 return false, nil
            }
-           err = dec.Decode(&(msg.PackID))
+           err = dec.Decode(&(msg.PacketID))
            if err != nil {
                 checkErr(err)
                 return false, nil
            }
-           switch msg.PackID {
+           switch msg.PacketID {
                   """)
     for item in packet_list:
         decodef.write("case %s:\nvar data %s\nerr = dec.Decode(&data)\nmsg.Data = data\n" %(item.name, item.payload))

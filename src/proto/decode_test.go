@@ -18,7 +18,7 @@ func TestUse(t *testing.T) {
 	var buff bytes.Buffer
 	msg := Message{}
 	msg.Sender.New()
-	msg.PackID = PacketID(packetID)
+	msg.PacketID = PacketID(packetID)
 	msg.Data = packet
 	fmt.Println(msg)
 
