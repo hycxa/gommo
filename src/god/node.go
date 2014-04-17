@@ -16,34 +16,13 @@ import (
 )
 
 const (
-	TCP_TIMEOUT = 12000
-)
-
-const (
 	NODE_GS_TYPE   = "GS"
 	NODE_GATE_TYPE = "GATE"
 )
 
 type NodeID hash.Hash
 
-type NodeInfo struct {
-	Name     string
-	Network  string
-	String   string
-	NodeType string
-}
-
-type RemoteNode struct {
-	NodeInfo
-	net.Conn
-}
-
 type RemoteNodeMap map[string]*RemoteNode
-
-type SendObjsInfo struct {
-	NodeAddr string
-	Objs     []proto.UUID
-}
 
 type Node struct {
 	NodeInfo
@@ -88,73 +67,8 @@ func NewNode(name, network, address string, nodeType string) *Node {
 	return self
 }
 
-func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo, objs *map[proto.UUID]*Process) (*RemoteNode, *SendObjsInfo) {
-	defer nodeTrace.UT(nodeTrace.T("Node::syncNodeInfo\t%s\tto\t%s", nodeInfo.Name, conn.RemoteAddr().String()))
-
-	var b, wb bytes.Buffer
-	var err error
-
-	enc := gob.NewEncoder(&b)
-	ext.AssertE(enc.Encode(nodeInfo))
-
-	selfObjs := make([]proto.UUID, len(*objs))
-	var index = 0
-	for uuid, _ := range *objs {
-		selfObjs[index] = uuid
-		index++
-	}
-	ext.AssertE(enc.Encode(selfObjs))
-
-	ext.AssertE(binary.Write(&wb, BYTE_ORDER, uint16(len(b.Bytes()))))
-	_, err = conn.Write(wb.Bytes())
-	ext.AssertE(err)
-
-	_, err = conn.Write(b.Bytes())
-	ext.AssertE(err)
-
-	header := make([]byte, 2)
-	_, err = io.ReadFull(conn, header)
-	ext.AssertE(err)
-
-	data := make([]byte, BYTE_ORDER.Uint16(header))
-	_, err = io.ReadFull(conn, data)
-	ext.AssertE(err)
-
-	var r RemoteNode
-	r.Conn = conn
-
-	rb := bytes.NewBuffer(data)
-	dec := gob.NewDecoder(rb)
-	ext.AssertE(dec.Decode(&(r.NodeInfo)))
-
-	var retObjs SendObjsInfo
-	retObjs.NodeAddr = r.String
-	ext.AssertE(dec.Decode(&(retObjs.Objs)))
-
-	return &r, &retObjs
-}
-
-func (self *Node) Dial(network, address string) error {
-	_, ok := self.connected[address]
-	if ok || address == self.String {
-		return nil
-	}
-	conn, err := net.Dial(network, address)
-	if err != nil {
-		return ext.LogError(err)
-	}
-
-	r, rObjs := syncNodeInfo(conn, self.NodeInfo, &self.objects)
-	self.connected[r.String] = r
-	for i := 0; i < len(rObjs.Objs); i++ {
-		self.remoteObjs[rObjs.Objs[i]] = r.String
-	}
-
+func GetNodeInfo() NodeInfo {
 	return nil
-}
-
-func (self *Node) DialNode(target *Node) (err error) {
-	return self.Dial(target.NodeInfo.Network, target.NodeInfo.String)
 }
 
 func (self *Node) ConnOtherSvr() error {
@@ -220,10 +134,7 @@ func (self *Node) accept() {
 			ext.LogError(err)
 			return
 		}
-		r, rObjs := syncNodeInfo(conn, self.NodeInfo, &self.objects)
-		self.newRemote <- r
-		self.newRemoteObjs <- rObjs
-		go self.dealOneCon(conn, r.String, self.closingNodes)
+		//TODO gen Agent Remote		
 	}
 }
 

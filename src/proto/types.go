@@ -25,7 +25,8 @@ func (self *UUID) New() {
 }
 
 type Message struct {
-	Sender UUID
-	Data   interface{}
-	PackID PacketID
+	Sender   UUID
+	Reciever UUID
+	Data     interface{}
+	PackID   PacketID
 }

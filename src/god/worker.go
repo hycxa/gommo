@@ -18,7 +18,7 @@ func NewWorker() *Worker {
 	w.L = lua.NewLua()
 	//TODO load lua file
 	w.processFunRef = w.L.GetRef("Process")
-	w.mq = make(chan proto.Message)
+	w.mq = make(chan *proto.Message, CHAN_BUFF_NUM)
 	go w.run()
 	return w
 }
@@ -52,5 +52,5 @@ func (w *Worker) notify(data *proto.Message) {
 }
 
 func (w *Worker) call() {
-
+	w.mq <- data
 }

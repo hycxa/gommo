@@ -12,31 +12,29 @@ type Agent struct {
 	Messenger
 	nFun     NotifyFun
 	conn     net.Conn
-	nodeAddr string
 }
 
 type agentHandler struct {
 }
 
-func NewAgent(m Messenger, nFun NotifyFun, conn net.Conn, nodeAddr string) Processor {
+func NewAgent(m Messenger, nFun NotifyFun, conn net.Conn) Processor {
 	a := new(Agent)
 	a.process = NewProcess(m, new(agentHandler), nil)
 	a.Messenger = m
 	a.nFun = nFun
 	a.conn = conn
-	a.nodeAddr = nodeAddr
 	go a.run()
 	return a
 }
 
-func (a *Agent) notify(proto.Message) (ok, error) {
-	a.notify(msg)
-	return a.process.notify(msg)
+func (a *Agent) proNotify(msg *proto.Message) error {
+	a.nFun.notify(msg)
+	return a.process.proNotify(msg)
 }
 
-func (a *Agent) call(proto.Message) (ok, proto.Message) {
-	a.notify(msg)
-	return a.process.call(msg)
+func (a *Agent) proCall(msg *proto.Message) (error, *proto.Message) {
+	a.nFun.call(msg)
+	return a.process.proCall(msg)
 }
 
 func (a *Agent) run() {
@@ -56,7 +54,7 @@ func (a *Agent) run() {
 		b := bytes.NewBuffer(data)
 		ok, msg := proto.DecodeMsg(b)
 		if ok {
-			a.notify(msg)
+			a.nFun.notify(msg)
 		}
 	}
 }
