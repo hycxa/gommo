@@ -1,17 +1,18 @@
 package god
 
 import (
+	"ext"
 	"proto"
 	"sync"
 )
 
 type Messenger interface {
 	Notify(PID, *proto.Message) error
-	Call(PID, *proto.Message) (error, proto.Message)
+	Call(PID, *proto.Message) (error, *proto.Message)
 
 	AddProcess(Processor)
 	RemoveProcess(Processor)
-	AllProcessInf(m *messenger) []PID
+	AllProcessInfo() []PID
 
 	AddRemote(*Remote) error
 	RemoveRemote(*Remote)
@@ -31,7 +32,7 @@ func NewMessenger() Messenger {
 
 func (m *messenger) Notify(pid PID, msg *proto.Message) error {
 	m.mutex.Lock()
-	ok, pro := m.processTab[PID]
+	pro, ok := m.processTab[pid]
 	m.mutex.Unlock()
 
 	if !ok {
@@ -42,18 +43,18 @@ func (m *messenger) Notify(pid PID, msg *proto.Message) error {
 				}
 			}
 		}
-		return error.Error("not found process:%v", pid)
+		return ext.MyError{"not found process"}
 	}
 	return pro.Notify(msg)
 }
 
 func (m *messenger) Call(pid PID, msg *proto.Message) (error, *proto.Message) {
 	m.mutex.Lock()
-	ok, pro := m.processTab[PID]
+	pro, ok := m.processTab[pid]
 	m.mutex.Unlock()
 	if !ok {
 		//TODO remoteCall
-		return error.Error("not found process:%v", pid), nil
+		return ext.MyError{"not found process"}, nil
 	}
 	return pro.Call(msg)
 }
@@ -61,13 +62,13 @@ func (m *messenger) Call(pid PID, msg *proto.Message) (error, *proto.Message) {
 func (m *messenger) AddProcess(addObj Processor) {
 	m.mutex.Lock()
 	m.processTab[addObj.pid()] = addObj
-	m.mutex.UnLock()
+	m.mutex.Unlock()
 
 	for i := 0; i < len(m.remoteTab); i++ {
 		if m.remoteTab[i] != nil {
-			var msg Message
+			var msg proto.Message
 			msg.PacketID = proto.PROCESS_ADD_OR_REMOVE
-			msg.Data = ProcessModify{UUID: addObj.pid(), IsAdd: true}
+			msg.Data = proto.ProcessModify{UUID: proto.UUID(addObj.pid()), IsAdd: true}
 			m.remoteTab[i].remoteNofity(&msg)
 		}
 	}
@@ -76,16 +77,26 @@ func (m *messenger) AddProcess(addObj Processor) {
 func (m *messenger) RemoveProcess(delObj Processor) {
 	m.mutex.Lock()
 	delete(m.processTab, delObj.pid())
-	m.mutex.UnLock()
+	m.mutex.Unlock()
 
 	for i := 0; i < len(m.remoteTab); i++ {
 		if m.remoteTab[i] != nil {
-			var msg Message
+			var msg proto.Message
 			msg.PacketID = proto.PROCESS_ADD_OR_REMOVE
-			msg.Data = ProcessModify{UUID: addObj.pid(), IsAdd: false}
+			msg.Data = proto.ProcessModify{UUID: proto.UUID(delObj.pid()), IsAdd: false}
 			m.remoteTab[i].remoteNofity(&msg)
 		}
 	}
+}
+
+func (m *messenger) AllProcessInfo() []PID {
+	ret := make([]PID, 1)
+	m.mutex.Lock()
+	for pid, _ := range m.processTab {
+		ret = append(ret, pid)
+	}
+	m.mutex.Unlock()
+	return ret
 }
 
 func (m *messenger) AddRemote(addObj *Remote) error {
@@ -95,6 +106,7 @@ func (m *messenger) AddRemote(addObj *Remote) error {
 			return nil
 		}
 	}
+	return ext.MyError{"Has no empty remotetab"}
 }
 
 func (m *messenger) RemoveRemote(delObj *Remote) {

@@ -23,3 +23,11 @@ func AssertT(t *testing.T, condition bool, f string, v ...interface{}) {
 		t.Fatalf("%s\n%s", s, Stack())
 	}
 }
+
+type MyError struct {
+	ErrorStr string
+}
+
+func (e MyError) Error() string{
+	return e.ErrorStr
+}

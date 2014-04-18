@@ -5,26 +5,22 @@ import (
 	"ext"
 	"io"
 	"net"
-	"time"
 	"proto"
+	"time"
 )
 
 type Agent struct {
 	*process
-	Messenger
+	mes         Messenger
 	nFun        WorkerNotifyFun
 	conn        net.Conn
 	writeBuffer chan *proto.Message
 }
 
-type agentHandler struct {
-	*Agent
-}
-
-func NewAgent(m Messenger, nFun WorkerNotifyFun, conn net.Conn) Processor {
+func NewAgent(mes Messenger, nFun WorkerNotifyFun, conn net.Conn) Processor {
 	a := new(Agent)
-	a.process = NewProcess(m, new(agentHandler{Agent: a}), nil)
-	a.Messenger = m
+	a.process = NewProcess(mes, a)
+	a.mes = mes
 	a.nFun = nFun
 	a.conn = conn
 	a.writeBuffer = make(chan *proto.Message, CHAN_BUFF_NUM)
@@ -49,13 +45,13 @@ func (a *Agent) readRun() {
 		b := bytes.NewBuffer(data)
 		ok, msg := proto.DecodeMsg(b)
 		if ok {
-			a.nFun.notify(&msg)
+			a.nFun.notify(msg)
 		}
 	}
 }
 
-func (a *agentHandler) Handle(msg *proto.Message) error {
-	msgType = proto.GetPacketScope(msg.PacketID)
+func (a *Agent) Handle(msg *proto.Message) error {
+	msgType := proto.GetPacketScope(msg.PacketID)
 	if msgType == proto.PACKAGE_SYSTEM {
 		//control operate
 		return nil
@@ -63,7 +59,7 @@ func (a *agentHandler) Handle(msg *proto.Message) error {
 		a.nFun.notify(msg)
 		return nil
 	} else {
-		return error.Error("unknow msgType", msg.PacketID)
+		return ext.MyError{"unknow msgType"}
 	}
 }
 
@@ -76,9 +72,9 @@ func (r *Agent) writeRun() {
 	var buff bytes.Buffer
 	for {
 		select {
-		case msg <- r.writeBuffer:
+		case msg := <-r.writeBuffer:
 			buff.Reset()
-			ret := protdealNetMsgo.EncodeMsg(&buff, msg)
+			ret := proto.EncodeMsg(&buff, msg)
 			if ret == false {
 				ext.Errorf("Error enc Msg")
 			} else {

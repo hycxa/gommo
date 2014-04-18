@@ -22,24 +22,26 @@ func NewAcceptor(mes Messenger, selfType int, network string, laddr string) *Acc
 	acc.selfType = selfType
 	acc.laddr = laddr
 	acc.mes = mes
+	var err error
 	acc.Listener, err = net.Listen(network, laddr)
 	if err != nil {
 		ext.Errorf(err.Error())
 		return nil
 	}
 	go acc.accept()
+	return acc
 }
 
-func (a *Acceptor) accept() {
+func (acc *Acceptor) accept() {
 	for {
-		conn, err := a.Accept()
+		conn, err := acc.Accept()
 		if err != nil {
 			ext.LogError(err)
 		} else {
-			if a.selfType == REMOTE_NODE_TYPE {
-				NewRemote(m, conn)
-			} else if a.selfType == CLIENT_TYPE {
-				NewAgent(m, GetOneWorker(), conn)
+			if acc.selfType == REMOTE_NODE_TYPE {
+				NewRemote(acc.mes, conn)
+			} else if acc.selfType == CLIENT_TYPE {
+				NewAgent(acc.mes, GetOneWorker(), conn)
 			}
 		}
 	}

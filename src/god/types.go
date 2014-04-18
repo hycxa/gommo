@@ -20,7 +20,6 @@ type NodeInfo struct {
 	Name     string
 	Network  string
 	String   string
-	NodeType string
 }
 
 type Handler interface {
