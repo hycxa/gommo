@@ -9,8 +9,8 @@ type PID proto.UUID
 
 type Processor interface {
 	pid() PID
-	proNotify(*proto.Message) error
-	proCall(*proto.Message) (error, *proto.Message)
+	Notify(*proto.Message) error
+	Call(*proto.Message) (error, *proto.Message)
 }
 
 type process struct {
@@ -57,12 +57,12 @@ func (r *Process) pid() PID {
 	return r.PID
 }
 
-func (r *Process) proNotify(msg *proto.Message) error {
+func (r *Process) Notify(msg *proto.Message) error {
 	r.mq <- msg
 	return nil
 }
 
-func (r *Process) proCall(msg *proto.Message) (error, *proto.Message) {
+func (r *Process) Call(msg *proto.Message) (error, *proto.Message) {
 	r.mq <- msg
 	return nil, nil
 }

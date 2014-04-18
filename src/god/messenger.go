@@ -44,7 +44,7 @@ func (m *messenger) Notify(pid PID, msg *proto.Message) error {
 		}
 		return error.Error("not found process:%v", pid)
 	}
-	return pro.proNotify(msg)
+	return pro.Notify(msg)
 }
 
 func (m *messenger) Call(pid PID, msg *proto.Message) (error, *proto.Message) {
@@ -55,7 +55,7 @@ func (m *messenger) Call(pid PID, msg *proto.Message) (error, *proto.Message) {
 		//TODO remoteCall
 		return error.Error("not found process:%v", pid), nil
 	}
-	return pro.proCall(msg)
+	return pro.Call(msg)
 }
 
 func (m *messenger) AddProcess(addObj Processor) {

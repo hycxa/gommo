@@ -17,27 +17,31 @@ def random_shuffle(beginNum, endNum):
     for i in range(0,length):
         randomi = int(random()*length)
         retTab[0],retTab[randomi] = retTab[randomi],retTab[0]
+    retTab.insert(0, 1)
     return retTab
 
-genPacketIDTab = random_shuffle(1000, 100000)
-noUsePacketIDIndex = 0
+userPacketIDMin = 10000
+userPacketIDMax = 100000
+genPacketIDTab = random_shuffle(userPacketIDMin, userPacketIDMax)
 
-def getOnePacketID():
-    global genPacketIDTab
-    global noUsePacketIDIndex
+sysPacketIDMin = 0
+sysPacketIDMax = 9999
+genSysTab = random_shuffle(0, 9999)
 
-    retID = genPacketIDTab[noUsePacketIDIndex]
-    noUsePacketIDIndex = noUsePacketIDIndex + 1
-    length = len(genPacketIDTab)
-    if noUsePacketIDIndex >= length:
-        maxValue = genPacketIDTab[length - 1]
-        genPacketIDTab = random_shuffle(maxValue + 1, maxValue + 100000)
-        noUsePacketIDIndex = 0
+def getOnePacketID(tab):
+    length = len(tab)
+    if tab[0] >= length:
+        return None
+    retID = tab[tab[0]]
+    tab[0] = tab[0] + 1
     return retID
 
 class Packet(object):
-    def __init__(self, n, d, p):
-        self.typeid = getOnePacketID()
+    def __init__(self, n, s, d, p):
+        if s == "PACKAGE_SYSTEM":
+            self.typeid = getOnePacketID(genSysTab)
+        elif s == "PACKAGE_USER":
+            self.typeid = getOnePacketID(genPacketIDTab)
         self.name = n
         self.desc = d
         self.payload = p
@@ -53,9 +57,9 @@ class Packet(object):
         if self.desc is None:
             self.desc = ''
 
-def new_packet(packet_list, packet_name, packet_desc, packet_payload):
-    if packet_name is not None and packet_payload is not None:
-        packet = Packet(packet_name, packet_desc, packet_payload)
+def new_packet(packet_list, packet_name, packet_scope, packet_desc, packet_payload):
+    if packet_name is not None and packet_payload is not None and packet_scope is not None:
+        packet = Packet(packet_name, packet_scope, packet_desc, packet_payload)
         packet_list.append(packet)
 
 def getOneLineStructName(line):
@@ -73,28 +77,31 @@ def parse_packet(packet_buf):
     start_packet = False
     curStructName = None
     packet_name = None
+    packet_scope = None
     packet_desc = None
     for line in L:
         idx = line.find(':')
         if idx < 0:
             structName = getOneLineStructName(line)
             if structName is not None:
-                new_packet(packet_list, packet_name, packet_desc, curStructName)
+                new_packet(packet_list, packet_name, packet_scope, packet_desc, curStructName)
                 packet_name = packet_desc = None
                 curStructName = structName
             continue
 
         if line[:idx] == 'name':
             if start_packet:
-                new_packet(packet_list, packet_name, packet_desc, curStructName)
+                new_packet(packet_list, packet_name, packet_scope, packet_desc, curStructName)
                 packet_name = packet_desc = None
             start_packet = True
             packet_name = line[idx+1:]
         elif line[:idx] == 'desc':
             packet_desc = line[idx+1:]
+        elif line[:idx] == 'packageScope':
+            packet_scope = line[idx+1:]
 
-    new_packet(packet_list, packet_name, packet_desc, curStructName)
-    packet_name = packet_desc = None
+    new_packet(packet_list, packet_name, packet_scope, packet_desc, curStructName)
+    packet_name = packet_desc = packet_scope = None
     return packet_list
 
 def gen_go_packet(packet_list):
@@ -114,8 +121,17 @@ def gen_go_packet(packet_list):
         import (
         "bytes"
         "encoding/gob"
-        )\n\n
-        func EncodeMsg(buff * bytes.Buffer, msg *Message) bool {
+        )\n
+        func GetPacketScope(id PacketID) int{""")
+
+    decodef.write("if id >= %d && id <= %d {\nreturn PACKAGE_SYSTEM\n" %(sysPacketIDMin, sysPacketIDMax))
+    decodef.write("}else if id >= %d && id <= %d{\nreturn PACKAGE_USER\n" %(userPacketIDMin, userPacketIDMax))
+
+    decodef.write("""}else{
+    return -1
+        }
+    }\n
+    func EncodeMsg(buff * bytes.Buffer, msg *Message) bool {
 	        enc := gob.NewEncoder(buff)
         	err := enc.Encode(msg.Sender)
 	        if err != nil {

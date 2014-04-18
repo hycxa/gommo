@@ -23,11 +23,11 @@ type NodeInfo struct {
 }
 
 type Handler interface {
-	Handle(data *proto.Message) error
+	Handle(msg *proto.Message) error
 }
 
 type NotifyFun interface {
-	notify(data *proto.Message)
+	notify(msg *proto.Message)
 }
 
 // func (m Marshaler) MarshalBinary() ([]byte, error) {
