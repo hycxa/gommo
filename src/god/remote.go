@@ -33,6 +33,7 @@ func NewRemote(mes Messenger, conn net.Conn) *Remote {
 	if err != nil {
 		return nil
 	}
+	mes.AddRemote(r)
 	go r.readRun()
 	go r.writeRun()
 	return r

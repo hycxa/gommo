@@ -8,6 +8,7 @@ import (
 const (
 	CHAN_BUFF_NUM = 16 //chan buffer max deal num
 	TCP_TIMEOUT   = 60 // tcp read timeout
+	WORKER_NUM_LIMIT = 4 //worker num limit
 )
 
 type Marshaler interface {
@@ -26,7 +27,7 @@ type Handler interface {
 	Handle(msg *proto.Message) error
 }
 
-type NotifyFun interface {
+type WorkerNotifyFun interface {
 	notify(msg *proto.Message)
 }
 

@@ -1,70 +1,31 @@
 package god
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/gob"
 	"encoding/json"
 	"ext"
-	"fmt"
-	"hash"
-	"io"
 	"io/ioutil"
-	"net"
+	"math/rand"
 	"net/http"
-	"proto"
+	"time"
 )
-
-const (
-	NODE_GS_TYPE   = "GS"
-	NODE_GATE_TYPE = "GATE"
-)
-
-type NodeID hash.Hash
-
-type RemoteNodeMap map[string]*RemoteNode
-
-type Node struct {
-	NodeInfo
-	net.Listener
-	newRemote       chan *RemoteNode
-	newRemoteObjs   chan *SendObjsInfo
-	closeRemoteObjs chan *[]proto.UUID
-	closingNodes    chan string
-	closeRequest    chan bool
-	connected       RemoteNodeMap
-	objects         map[proto.UUID]*Process
-	remoteObjs      map[proto.UUID]string
-}
 
 var (
-	nodeTrace = ext.Trace(false)
+	workTab [WORKER_NUM_LIMIT]*Worker
 )
 
-func NewNode(name, network, address string, nodeType string) *Node {
-	var err error
-	self := new(Node)
-	self.Listener, err = net.Listen(network, address)
-	if err != nil {
-		ext.Errorf(err.Error())
-		return nil
-	}
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
-	self.Name = name
-	self.NodeInfo.Network = self.Listener.Addr().Network()
-	self.NodeInfo.String = self.Listener.Addr().String()
-	self.NodeType = nodeType
-	self.newRemote = make(chan *RemoteNode, 16)
-	self.closingNodes = make(chan string, 16)
-	self.newRemoteObjs = make(chan *SendObjsInfo)
-	self.closeRemoteObjs = make(chan *[]proto.UUID)
-	self.connected = make(map[string]*RemoteNode)
-	self.closeRequest = make(chan bool)
-	self.objects = make(map[proto.UUID]*Process)
-	self.remoteObjs = make(map[proto.UUID]string)
-	go self.accept()
-	go self.update()
-	return self
+func GetOneWorker() *Worker {
+	index := rand.Intn(WORKER_NUM_LIMIT)
+	if workTab[index] == nil {
+		workTab[index] = NewWorker()
+	}
+	return workTab[index]
+}
+
+func NewNode(name, network, address string) {
 }
 
 func GetNodeInfo() NodeInfo {
@@ -125,128 +86,4 @@ func (self *Node) ConnOtherSvr() error {
 		}
 	}
 	return err
-}
-
-func (self *Node) accept() {
-	for {
-		conn, err := self.Accept()
-		if err != nil {
-			ext.LogError(err)
-			return
-		}
-		//TODO gen Agent Remote		
-	}
-}
-
-func (self *Node) dealOneCon(conn net.Conn, nodeAddr string, closingNodes chan string) {
-	header := make([]byte, 2)
-
-	defer func() {
-		conn.Close()
-		closingNodes <- nodeAddr
-	}()
-
-	for {
-		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
-		_, err := io.ReadFull(conn, header)
-		ext.AssertE(err)
-
-		data := make([]byte, BYTE_ORDER.Uint16(header))
-		//conn.SetReadDeadline(time.Now().Add(TCP_TIMEOUT * time.Second))
-		_, err = io.ReadFull(conn, data)
-		ext.AssertE(err)
-
-		b := bytes.NewBuffer(data)
-		ok, msg := proto.DecodeMsg(b)
-		if ok {
-			_ = msg //消息处理
-		}
-	}
-}
-
-func (self *Node) update() {
-	for {
-		select {
-		case newRemote, ok := <-self.newRemote:
-			if ok {
-				self.connected[newRemote.String] = newRemote
-			}
-		case newObjs, ok := <-self.newRemoteObjs:
-			if ok {
-				for i := 0; i < len(newObjs.Objs); i++ {
-					self.remoteObjs[newObjs.Objs[i]] = newObjs.NodeAddr
-				}
-			}
-		case nodeAddr, ok := <-self.closingNodes:
-			if ok {
-				delete(self.connected, nodeAddr)
-				var delTab []proto.UUID
-				for uuid, addr := range self.remoteObjs {
-					if addr == nodeAddr {
-						delTab = append(delTab, uuid)
-					}
-				}
-				for i := 0; i < len(delTab); i++ {
-					delete(self.remoteObjs, delTab[i])
-				}
-			}
-		case closeObjs, ok := <-self.closeRemoteObjs:
-			if ok {
-				for i := 0; i < len(*closeObjs); i++ {
-					delete(self.remoteObjs, (*closeObjs)[i])
-				}
-			}
-		case <-self.closeRequest:
-			for _, remoteNode := range self.connected {
-				remoteNode.Close()
-			}
-			return
-		}
-	}
-}
-
-func (self *Node) Connected() RemoteNodeMap {
-	return self.connected
-}
-
-func (self *Node) Close() {
-	self.closeRequest <- true
-}
-
-func (self *Node) Notify(source proto.UUID, target proto.UUID, packetID proto.PacketID, data interface{}) error {
-	defer ext.UT(ext.T("NOTIFY"))
-	t, ok1 := self.objects[target]
-	otherSvrAddr, ok2 := self.remoteObjs[target]
-	if !ok1 && !ok2 {
-		return fmt.Errorf("Target %v is not found!", target)
-	}
-	m := proto.Message{Sender: source, Data: data, PacketID: packetID}
-
-	if ok1 {
-		t.mq <- m
-	} else {
-		otherSvr, ok3 := self.connected[otherSvrAddr]
-		if !ok3 {
-			return fmt.Errorf("Target %v is not found!", target)
-		}
-		var b, wb bytes.Buffer
-		ret := proto.EncodeMsg(&b, &m)
-		if !ret {
-			return fmt.Errorf("Encode fail %v", target)
-		}
-		ext.AssertE(binary.Write(&wb, BYTE_ORDER, uint16(len(b.Bytes()))))
-		_, err := otherSvr.Conn.Write(wb.Bytes())
-		ext.AssertE(err)
-		_, err = otherSvr.Conn.Write(b.Bytes())
-		ext.AssertE(err)
-	}
-	return nil
-}
-
-func (self *Node) Call(packID proto.PacketID, data proto.Message) (retID proto.PacketID, ret proto.Message, err error) {
-	return 0, proto.Message{}, nil
-}
-
-func (self *Node) AddProcess(o *Process) {
-	self.objects[o.UUID] = o
 }
