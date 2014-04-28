@@ -1,8 +1,8 @@
 package proto
 
 const (
-	XX1 = 37240
-	XX2 = 1001
-	XX3 = 62993
-	XX4 = 77229
+	LUA_TRANSFER_DATA     = 5551
+	CFG_FLUSH_REQ         = 95128
+	CFG_FLUSH_RSP         = 51228
+	PROCESS_ADD_OR_REMOVE = 1003
 )

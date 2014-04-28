@@ -5,13 +5,29 @@ import (
 	"proto"
 )
 
+const (
+	CHAN_BUFF_NUM = 16 //chan buffer max deal num
+	TCP_TIMEOUT   = 60 // tcp read timeout
+)
+
 type Marshaler interface {
 	// encoding.BinaryMarshaler
 	// encoding.BinaryUnmarshaler
 }
 
+type NodeInfo struct {
+	Name     string
+	Network  string
+	String   string
+	NodeType string
+}
+
 type Handler interface {
-	Handle(packID proto.PacketID, data *proto.Message) error
+	Handle(data *proto.Message) error
+}
+
+type NotifyFun interface {
+	notify(data *proto.Message)
 }
 
 // func (m Marshaler) MarshalBinary() ([]byte, error) {
