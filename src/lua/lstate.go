@@ -139,6 +139,23 @@ func (l *L) DoString(str string) (ok bool, ret []interface{}) {
 	return
 }
 
+func (l *L) Loadfile(fileName string) (ok bool, ret []interface{}) {
+	n := C.lua_gettop(l.s)
+	Cs := C.CString(fileName)
+	defer C.free(unsafe.Pointer(Cs))
+	C.luaL_loadfile(l.s, Cs)
+
+	if C.lpcall(l.s, 0, C.LUA_MULTRET, 0, 0, nil) == 0 {
+		ok = true
+	} else {
+		ok = false
+	}
+	retCnt := C.lua_gettop(l.s) - n
+	ret = l.getRetValue(retCnt)
+	C.lua_settop(l.s, n)
+	return
+}
+
 func pushTable(l *L, v reflect.Value) {
 	C.lua_createtable(l.s, 0, 0)
 	for i := 0; i < v.Len(); i++ {
@@ -211,22 +228,22 @@ func (l *L) Call(f string, args ...interface{}) (ok bool, ret []interface{}) {
 	return
 }
 
-func (l *L) GetRef(s string) C.int {
+func (l *L) GetRef(s string) int {
 	Cs := C.CString(s)
 	defer C.free(unsafe.Pointer(Cs))
 	//C.luaL_loadstring(l.s, Cs)
 	C.lgetglobal(l.s, Cs)
-	return C.luaL_ref(l.s, C.LUA_REGISTRYINDEX)
+	return int(C.luaL_ref(l.s, C.LUA_REGISTRYINDEX))
 }
 
 func isStackFunc(s *C.lua_State, index C.int) bool {
 	return C.lua_type(s, index) == C.LUA_TFUNCTION
 }
 
-func (l *L) CallRef(funi C.int, args []byte) (ok bool, ret []byte) {
+func (l *L) CallRef(funi int, args []byte) (ok bool, ret []byte) {
 	n := C.lua_gettop(l.s)
 	defer C.lua_settop(l.s, n)
-	C.lua_rawgeti(l.s, C.LUA_REGISTRYINDEX, funi)
+	C.lua_rawgeti(l.s, C.LUA_REGISTRYINDEX, C.int(funi))
 	if !isStackFunc(l.s, -1) {
 		return false, nil
 	}

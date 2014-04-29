@@ -5,40 +5,31 @@ import (
 	"ext"
 	"io"
 	"net"
+	"proto"
 	"time"
 )
 
 type Agent struct {
 	*process
-	Messenger
-	nFun NotifyFun
-	conn net.Conn
+	mes         Messenger
+	nFun        WorkerNotifyFun
+	conn        net.Conn
+	writeBuffer chan *proto.Message
 }
 
-type agentHandler struct {
-}
-
-func NewAgent(m Messenger, nFun NotifyFun, conn net.Conn) Processor {
+func NewAgent(mes Messenger, nFun WorkerNotifyFun, conn net.Conn) Processor {
 	a := new(Agent)
-	a.process = NewProcess(m, new(agentHandler), nil)
-	a.Messenger = m
+	a.process = NewProcess(mes, a)
+	a.mes = mes
 	a.nFun = nFun
 	a.conn = conn
-	go a.run()
+	a.writeBuffer = make(chan *proto.Message, CHAN_BUFF_NUM)
+	go a.readRun()
+	go a.writeRun()
 	return a
 }
 
-func (a *Agent) proNotify(msg *proto.Message) error {
-	a.nFun.notify(msg)
-	return a.process.proNotify(msg)
-}
-
-func (a *Agent) proCall(msg *proto.Message) (error, *proto.Message) {
-	a.nFun.call(msg)
-	return a.process.proCall(msg)
-}
-
-func (a *Agent) run() {
+func (a *Agent) readRun() {
 	defer a.conn.Close()
 	header := make([]byte, 2)
 
@@ -59,6 +50,39 @@ func (a *Agent) run() {
 	}
 }
 
-func (a *agentHandler) Handle(data *proto.Message) error {
-	return nil
+func (a *Agent) Handle(msg *proto.Message) error {
+	msgType := proto.GetPacketScope(msg.PacketID)
+	if msgType == proto.PACKAGE_SYSTEM {
+		//control operate
+		return nil
+	} else if msgType == proto.PACKAGE_USER {
+		a.nFun.notify(msg)
+		return nil
+	} else {
+		return ext.MyError{"unknow msgType"}
+	}
+}
+
+//此接口给lua用的
+func (a *Agent) writeMsg(msg *proto.Message) {
+	a.writeBuffer <- msg
+}
+
+func (r *Agent) writeRun() {
+	var buff bytes.Buffer
+	for {
+		select {
+		case msg := <-r.writeBuffer:
+			buff.Reset()
+			ret := proto.EncodeMsg(&buff, msg)
+			if ret == false {
+				ext.Errorf("Error enc Msg")
+			} else {
+				n, err := r.conn.Write(buff.Bytes())
+				if err != nil {
+					ext.Errorf("Error send bytes:", n, "Reason", err.Error())
+				}
+			}
+		}
+	}
 }

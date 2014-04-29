@@ -9,24 +9,22 @@ type PID proto.UUID
 
 type Processor interface {
 	pid() PID
-	proNotify(*proto.Message) error
-	proCall(*proto.Message) (error, *proto.Message)
+	Notify(*proto.Message) error
+	Call(*proto.Message) (error, *proto.Message)
 }
 
 type process struct {
-	Processor
 	m Messenger
 	h Handler
-	PID
-	observer PID
+	p proto.UUID
 	mq       chan *proto.Message
 	quit     chan int
 }
 
-func NewProcess(m Messenger, h Handler, observer PID) *process {
+func NewProcess(m Messenger, h Handler) *process {
 	o := new(process)
-	o.PID.New()
-	o.Handler = h
+	o.p.New()
+	o.h = h
 	o.mq = make(chan *proto.Message, CHAN_BUFF_NUM)
 	o.quit = make(chan int)
 	m.AddProcess(o)
@@ -34,12 +32,12 @@ func NewProcess(m Messenger, h Handler, observer PID) *process {
 	return o
 }
 
-func (r *Process) run() {
+func (r *process) run() {
 	defer ext.UT(ext.T("Process::run"))
 	for {
 		select {
 		case msg := <-r.mq:
-			err := r.Handle(msg)
+			err := r.h.Handle(msg)
 			if err != nil {
 				ext.Errorf(err.Error())
 			}
@@ -49,20 +47,20 @@ func (r *Process) run() {
 	}
 }
 
-func (r *Process) Close() {
+func (r *process) Close() {
 	r.quit <- 0
 }
 
-func (r *Process) pid() PID {
-	return r.PID
+func (r *process) pid() PID {
+	return PID(r.p)
 }
 
-func (r *Process) proNotify(msg *proto.Message) error {
+func (r *process) Notify(msg *proto.Message) error {
 	r.mq <- msg
 	return nil
 }
 
-func (r *Process) proCall(msg *proto.Message) (error, *proto.Message) {
+func (r *process) Call(msg *proto.Message) (error, *proto.Message) {
 	r.mq <- msg
 	return nil, nil
 }

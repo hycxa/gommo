@@ -8,6 +8,7 @@ import (
 const (
 	CHAN_BUFF_NUM = 16 //chan buffer max deal num
 	TCP_TIMEOUT   = 60 // tcp read timeout
+	WORKER_NUM_LIMIT = 4 //worker num limit
 )
 
 type Marshaler interface {
@@ -19,15 +20,14 @@ type NodeInfo struct {
 	Name     string
 	Network  string
 	String   string
-	NodeType string
 }
 
 type Handler interface {
-	Handle(data *proto.Message) error
+	Handle(msg *proto.Message) error
 }
 
-type NotifyFun interface {
-	notify(data *proto.Message)
+type WorkerNotifyFun interface {
+	notify(msg *proto.Message)
 }
 
 // func (m Marshaler) MarshalBinary() ([]byte, error) {

@@ -2,7 +2,10 @@ package god
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/gob"
 	"ext"
+	"io"
 	"net"
 	"proto"
 	"sync"
@@ -33,13 +36,14 @@ func NewRemote(mes Messenger, conn net.Conn) *Remote {
 	if err != nil {
 		return nil
 	}
+	mes.AddRemote(r)
 	go r.readRun()
 	go r.writeRun()
 	return r
 }
 
 func (r *Remote) dial(conn net.Conn) error {
-	rObjs := syncNodeInfo(conn, GetNodeInfo(), r.AllProcessInfo())
+	rObjs := syncNodeInfo(conn, GetNodeInfo(), r.mes.AllProcessInfo())
 	r.nodeAddr = rObjs.NodeAddr
 	r.conn = conn
 	for i := 0; i < len(rObjs.Objs); i++ {
@@ -48,8 +52,8 @@ func (r *Remote) dial(conn net.Conn) error {
 	return nil
 }
 
-func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo, selfObjs []PID) *SendObjsInfo {
-	defer nodeTrace.UT(nodeTrace.T("Node::syncNodeInfo\t%s\tto\t%s", nodeInfo.Name, conn.RemoteAddr().String()))
+func syncNodeInfo(conn net.Conn, nodeInfo *NodeInfo, selfObjs []PID) *SendObjsInfo {
+	//defer nodeTrace.UT(nodeTrace.T("Node::syncNodeInfo\t%s\tto\t%s", nodeInfo.Name, conn.RemoteAddr().String()))
 
 	var b, wb bytes.Buffer
 	var err error
@@ -88,26 +92,26 @@ func syncNodeInfo(conn net.Conn, nodeInfo NodeInfo, selfObjs []PID) *SendObjsInf
 
 func (r *Remote) AddRemoteObj(msg *proto.Message) {
 	r.mutex.Lock()
-	r.objs[msg.Data.UUID] = ""
-	r.mutex.UnLock()
+	r.objs[PID((msg.Data).(proto.ProcessModify).UUID)] = ""
+	r.mutex.Unlock()
 }
 
 func (r *Remote) RemoveRemoteObj(msg *proto.Message) {
 	r.mutex.Lock()
-	r.objs[msg.Data.UUID] = nil
-	r.mutex.UnLock()
+	delete(r.objs, PID((msg.Data).(proto.ProcessModify).UUID))
+	r.mutex.Unlock()
 }
 
 func (r *Remote) dealNetMsg(msg *proto.Message) {
 	switch msg.PacketID {
 	case proto.PROCESS_ADD_OR_REMOVE:
-		if msg.Data.IsAdd {
+		if msg.Data.(proto.ProcessModify).IsAdd {
 			r.AddRemoteObj(msg)
 		} else {
 			r.RemoveRemoteObj(msg)
 		}
 	default:
-		r.mes.Notify(msg.Reciever, msg)
+		r.mes.Notify(PID(msg.Reciever), msg)
 	}
 }
 
@@ -136,7 +140,7 @@ func (r *Remote) writeRun() {
 	var buff bytes.Buffer
 	for {
 		select {
-		case msg <- r.msgBuffer:
+		case msg := <-r.msgBuffer:
 			buff.Reset()
 			ret := proto.EncodeMsg(&buff, msg)
 			if ret == false {
@@ -157,8 +161,8 @@ func (r *Remote) remoteNofity(msg *proto.Message) bool {
 		return true
 	} else {
 		r.mutex.Lock()
-		ok, _ = r.objs[msg.Reciever]
-		r.mutex.UnLock()
+		_, ok := r.objs[PID(msg.Reciever)]
+		r.mutex.Unlock()
 		if ok {
 			r.msgBuffer <- msg
 		}

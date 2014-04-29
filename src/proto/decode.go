@@ -5,6 +5,16 @@ import (
 	"encoding/gob"
 )
 
+func GetPacketScope(id PacketID) int {
+	if id >= 0 && id <= 9999 {
+		return PACKAGE_SYSTEM
+	} else if id >= 10000 && id <= 100000 {
+		return PACKAGE_USER
+	} else {
+		return -1
+	}
+}
+
 func EncodeMsg(buff *bytes.Buffer, msg *Message) bool {
 	enc := gob.NewEncoder(buff)
 	err := enc.Encode(msg.Sender)
@@ -18,8 +28,6 @@ func EncodeMsg(buff *bytes.Buffer, msg *Message) bool {
 		return false
 	}
 	switch msg.PacketID {
-	case LUA_TRANSFER_DATA:
-		err = enc.Encode(msg.Data.(LuaTransferData))
 	case CFG_FLUSH_REQ:
 		err = enc.Encode(msg.Data.(CfgFlush))
 	case CFG_FLUSH_RSP:
@@ -50,10 +58,6 @@ func DecodeMsg(buff *bytes.Buffer) (bool, *Message) {
 		return false, nil
 	}
 	switch msg.PacketID {
-	case LUA_TRANSFER_DATA:
-		var data LuaTransferData
-		err = dec.Decode(&data)
-		msg.Data = data
 	case CFG_FLUSH_REQ:
 		var data CfgFlush
 		err = dec.Decode(&data)
