@@ -1,12 +1,8 @@
 package lua
 
 /*
-#cgo CFLAGS: -I /usr/local/Cellar/luajit/2.0.2/include/luajit-2.0/
-#cgo LDFLAGS: -lluajit-5.1.2 -L /usr/local/Cellar/luajit/2.0.2/lib
-//#cgo CFLAGS: -I /usr/local/Cellar/luajit/2.0.2/include/luajit-2.0/
-//#cgo LDFLAGS: -llua
-//#cgo CFLAGS: -I /Users/gaoyadong/Prc/luajit-2.0/src/
-//#cgo LDFLAGS: -lluajit -L /Users/gaoyadong/Prc/luajit-2.0/src/
+#cgo CFLAGS: -I /usr/include/lua5.1
+#cgo LDFLAGS: -llua5.1
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>

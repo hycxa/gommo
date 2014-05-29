@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -27,13 +28,14 @@ func GetOneWorker() *Worker {
 	return workTab[index]
 }
 
-func NodeInit(name, network, addr string) {
+func NodeInit(name, network, addr string, port int) {
 	nodeInfo.Name = name
 	nodeInfo.Network = network
-	nodeInfo.String = addr + ":8001"
+	nodeInfo.String = addr + ":" + strconv.Itoa(port)
+	otherAddr := addr + ":" + strconv.Itoa(port+1)
 	mes := NewMessenger()
 	NewAcceptor(mes, REMOTE_NODE_TYPE, network, nodeInfo.String)
-	NewAcceptor(mes, CLIENT_TYPE, network, (addr + ":8002"))
+	NewAcceptor(mes, CLIENT_TYPE, network, otherAddr)
 	ConnOtherSvr(mes)
 }
 
