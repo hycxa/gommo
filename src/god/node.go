@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type Node interface{
+type Node interface {
 	Connect(name string) (ok bool)
 	Nodes() []Node
 	//Processes() []Process

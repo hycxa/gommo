@@ -10,16 +10,16 @@ func sleepALittle() {
 	time.Sleep(1000 * time.Millisecond)
 }
 
-func TestNewNode1(t *testing.T) {
+func testNewNode1(t *testing.T) {
 	TestServer(t)
 	NodeInit("n1", "tcp", "127.0.0.1", 8001)
 
 	//for {
-		//sleepALittle()
+	//sleepALittle()
 	//}
 }
 
-func TestConnect(t *testing.T) {
+func testConnect(t *testing.T) {
 	n1 := NewNode("n1")
 	n2 := NewNode("n2")
 
