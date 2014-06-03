@@ -37,4 +37,3 @@ func TestServer(t *testing.T) {
 	http.HandleFunc("/locatePost", updateSvrList)
 	go http.ListenAndServe(":20000", nil)
 }
-
