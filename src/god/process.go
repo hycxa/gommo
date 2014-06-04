@@ -14,11 +14,11 @@ type Processor interface {
 }
 
 type process struct {
-	m Messenger
-	h Handler
-	p proto.UUID
-	mq       chan *proto.Message
-	quit     chan int
+	m    Messenger
+	h    Handler
+	p    proto.UUID
+	mq   chan *proto.Message
+	quit chan int
 }
 
 func NewProcess(m Messenger, h Handler) *process {

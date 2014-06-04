@@ -1,8 +1,8 @@
 package lua
 
 /*
-#cgo CFLAGS: -I /opt/include/luajit-2.0/
-#cgo LDFLAGS: -lluajit-5.1 -L /opt/lib/
+#cgo CFLAGS: -I /usr/include/lua5.1
+#cgo LDFLAGS: -llua5.1
 //#cgo CFLAGS: -I /usr/local/Cellar/luajit/2.0.2/include/luajit-2.0/
 //#cgo LDFLAGS: -llua
 //#cgo CFLAGS: -I /Users/gaoyadong/Prc/luajit-2.0/src/

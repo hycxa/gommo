@@ -5,6 +5,8 @@ for name in os.listdir('.'):
 	fullname = os.path.join(root, name)
 	if os.path.isdir(fullname):
 		os.chdir(fullname)
+		subprocess.call(['go', 'get'])
+		subprocess.call(['go', 'install'])
 		subprocess.call(['go', 'test'])
 	pass
 

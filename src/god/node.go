@@ -11,10 +11,31 @@ import (
 	"time"
 )
 
+type Node interface {
+	Connect(name string) (ok bool)
+	Nodes() []Node
+	//Processes() []Process
+}
+
+type node struct {
+}
+
 var (
 	workTab  [WORKER_NUM_LIMIT]*Worker
 	nodeInfo NodeInfo
 )
+
+func NewNode(name string) Node {
+	return &node{}
+}
+
+func (n *node) Connect(name string) (ok bool) {
+	return true
+}
+
+func (n *node) Nodes() []Node {
+	return nil
+}
 
 func init() {
 	rand.Seed(time.Now().Unix())
