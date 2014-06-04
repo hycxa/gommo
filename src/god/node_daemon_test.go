@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
-	"time"
 )
 
 func TestStartNodeDaemon(t *testing.T) {
@@ -23,12 +22,12 @@ func TestStartNodeDaemon(t *testing.T) {
 			ext.AssertT(t, reflect.DeepEqual(nd, d), "node daemon must be singleton.")
 		}()
 	}
-	time.Sleep(time.Second)
+	ext.AssertT(t, reflect.DeepEqual(nd, StartNodeDaemon()), "node daemon must be singleton.")
 }
 
 func TestNodeDaemonListener(t *testing.T) {
 	nd := StartNodeDaemon()
 	fmt.Println(nd.Network(), nd.String())
 	conn, err := net.Dial(nd.Network(), nd.String())
-	ext.AssertT(t, conn != nil && err == nil, "listener wrong")
+	ext.AssertT(t, conn != nil && err == nil, err.Error())
 }

@@ -3,6 +3,8 @@ package god
 import (
 	"ext"
 	"net"
+	"runtime"
+	"sync"
 )
 
 type Daemon interface {
@@ -15,8 +17,8 @@ type daemon struct {
 }
 
 var (
-	nd  Daemon
-	ndc = make(chan *daemon)
+	nd   Daemon
+	once sync.Once
 )
 
 func StartNodeDaemon() Daemon {
@@ -24,19 +26,21 @@ func StartNodeDaemon() Daemon {
 		return nd
 	}
 
-	go func() {
-		d := &daemon{}
-		ln, err := net.Listen("tcp", ":4369")
+	go once.Do(
+		func() {
+			d := &daemon{}
+			ln, err := net.Listen("tcp", ":4369")
 
-		if err != nil {
-			ext.LogError(err)
-			ndc <- nil
-			return
-		}
+			if err != nil {
+				ext.LogError(err)
+				return
+			}
 
-		d.Addr = ln.Addr()
-		ndc <- d
-	}()
-	nd = <-ndc
+			d.Addr = ln.Addr()
+			nd = d
+		})
+	for nd == nil {
+		runtime.Gosched()
+	}
 	return nd
 }
