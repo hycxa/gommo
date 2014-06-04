@@ -37,6 +37,7 @@ func StartNodeDaemon() Daemon {
 			}
 
 			d.Addr = ln.Addr()
+			d.Listener = ln
 			nd = d
 		})
 	for nd == nil {
