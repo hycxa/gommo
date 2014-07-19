@@ -24,6 +24,16 @@ func AssertT(t *testing.T, condition bool, f string, v ...interface{}) {
 	}
 }
 
+func TestingAssert(t* testing.T, condition bool, err error) {
+	if !condition {
+		if err != nil {
+			t.Fatalf("%s\n%s", err.Error(), Stack())
+		} else {
+			t.Fatalf(Stack())
+		}
+	}
+}
+
 type MyError struct {
 	ErrorStr string
 }

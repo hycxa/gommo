@@ -2,7 +2,6 @@ package god
 
 import (
 	"ext"
-	"fmt"
 	"net"
 	"reflect"
 	"runtime"
@@ -23,16 +22,11 @@ func TestStartDaemon(t *testing.T) {
 				func() {
 					nd = d
 				})
-			fmt.Printf("%+v\t%+v\t%+v\t%+v\t%+v\n", i, &nd, nd, &d, d)
 			ext.AssertT(t, reflect.DeepEqual(nd, d), "node daemon must be singleton.")
 		}()
 	}
 	ext.AssertT(t, reflect.DeepEqual(nd, StartDaemon()), "node daemon must be singleton.")
-}
 
-func TestNodeDaemonListener(t *testing.T) {
-	nd := StartDaemon()
-	fmt.Println(nd.Network(), nd.String())
 	conn, err := net.Dial(nd.Network(), nd.String())
 	ext.TestingAssert(t, conn != nil && err == nil, err)
 }

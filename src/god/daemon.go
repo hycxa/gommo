@@ -31,10 +31,7 @@ func StartDaemon() Daemon {
 			d := &daemon{}
 			ln, err := net.Listen("tcp", ":4369")
 
-			if err != nil {
-				ext.LogError(err)
-				return
-			}
+			ext.AssertE(err)
 
 			d.Addr = ln.Addr()
 			d.Listener = ln
