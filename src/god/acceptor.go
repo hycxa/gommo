@@ -41,7 +41,6 @@ func (acc *Acceptor) accept() {
 			if acc.selfType == REMOTE_NODE_TYPE {
 				NewRemote(acc.mes, conn)
 			} else if acc.selfType == CLIENT_TYPE {
-				NewAgent(acc.mes, GetOneWorker(), conn)
 			}
 		}
 	}

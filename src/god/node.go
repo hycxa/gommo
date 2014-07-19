@@ -21,7 +21,6 @@ type node struct {
 }
 
 var (
-	workTab  [WORKER_NUM_LIMIT]*Worker
 	nodeInfo NodeInfo
 )
 
@@ -39,14 +38,6 @@ func (n *node) Nodes() []Node {
 
 func init() {
 	rand.Seed(time.Now().Unix())
-}
-
-func GetOneWorker() *Worker {
-	index := rand.Intn(WORKER_NUM_LIMIT)
-	if workTab[index] == nil {
-		workTab[index] = NewWorker()
-	}
-	return workTab[index]
 }
 
 func NodeInit(name, network, addr string, port int) {
