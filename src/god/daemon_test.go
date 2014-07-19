@@ -6,28 +6,33 @@ import (
 	"net"
 	"reflect"
 	"runtime"
+	"sync"
 	"testing"
 )
 
-func TestStartNodeDaemon(t *testing.T) {
+func TestStartDaemon(t *testing.T) {
 	runtime.GOMAXPROCS(4)
 	ext.AssertT(t, runtime.GOMAXPROCS(4) == 4, "GOMAXPROCS must > 1")
 	var nd Daemon
+	var once sync.Once
 
 	for i := 0; i < 100; i++ {
 		go func() {
-			d := StartNodeDaemon()
-			nd = d
-			//fmt.Printf("%+v\t%+v\t%+v\t%+v\t%+v\n", i, &nd, nd, &d, d)
+			d := StartDaemon()
+			once.Do(
+				func() {
+					nd = d
+				})
+			fmt.Printf("%+v\t%+v\t%+v\t%+v\t%+v\n", i, &nd, nd, &d, d)
 			ext.AssertT(t, reflect.DeepEqual(nd, d), "node daemon must be singleton.")
 		}()
 	}
-	ext.AssertT(t, reflect.DeepEqual(nd, StartNodeDaemon()), "node daemon must be singleton.")
+	ext.AssertT(t, reflect.DeepEqual(nd, StartDaemon()), "node daemon must be singleton.")
 }
 
 func TestNodeDaemonListener(t *testing.T) {
-	nd := StartNodeDaemon()
+	nd := StartDaemon()
 	fmt.Println(nd.Network(), nd.String())
 	conn, err := net.Dial(nd.Network(), nd.String())
-	ext.AssertT(t, conn != nil && err == nil, err.Error())
+	ext.TestingAssert(t, conn != nil && err == nil, err)
 }

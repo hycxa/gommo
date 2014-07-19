@@ -21,12 +21,12 @@ var (
 	once sync.Once
 )
 
-func StartNodeDaemon() Daemon {
+func StartDaemon() Daemon {
 	if nd != nil {
 		return nd
 	}
 
-	go once.Do(
+	once.Do(
 		func() {
 			d := &daemon{}
 			ln, err := net.Listen("tcp", ":4369")
