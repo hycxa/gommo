@@ -1,1 +1,4 @@
-# 使用golang设计的分布式服务器框架
+god
+===
+
+Go Distributed framework

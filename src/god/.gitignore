@@ -4,11 +4,8 @@
 *.so
 
 # Folders
-_obj/
-_test/
-bin/
-pkg/
-src/github.com/
+_obj
+_test
 
 # Architecture specific extensions/prefixes
 *.[568vq]

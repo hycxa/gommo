@@ -1,4 +1,4 @@
-goext
-=====
+ext
+===
 
-golang little extension
+Go ext package
