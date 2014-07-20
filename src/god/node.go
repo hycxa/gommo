@@ -25,6 +25,8 @@ var (
 )
 
 func NewNode(name string) Node {
+	d := StartDaemon()
+	d.Register(name, )
 	return &node{}
 }
 

@@ -10,7 +10,7 @@ type PID proto.UUID
 type Processor interface {
 	pid() PID
 	Notify(*proto.Message) error
-	Call(*proto.Message) (error, *proto.Message)
+	HandleNotify(*proto.Message) error
 }
 
 type process struct {
