@@ -1,5 +1,3 @@
 #! /bin/sh
 
-mkdir .bootstrap
-cd .bootstrap
 sudo apt-get install scons golang bzr
