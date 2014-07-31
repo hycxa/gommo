@@ -2,15 +2,14 @@ package main
 
 import (
 	"god"
-	"runtime"
 )
 
 func main() {
-	acceptor := god.NewWorker(&god.Acceptor)
-	node_manager := god.NewWorker(&god.NodeManager)
-	worker_manager := god.NewWorker(&god.WorkerManager)
-	console := god.NewWorker(&god.Console)
-	for console.Working() {
-		runtime.Gosched()
-	}
+	acceptor := god.NewWorker(&god.Acceptor{})
+	// node_manager, id := god.NewWorker(&god.NodeManager{})
+	// worker_manager, id := god.NewWorker(&god.WorkerManager{})
+	console := &god.Console{}
+
+	console.Run()
+	acceptor.Stop()
 }

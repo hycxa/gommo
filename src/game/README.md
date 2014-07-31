@@ -1,4 +1,0 @@
-gogame
-======
-
-golang game framework

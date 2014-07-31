@@ -3,6 +3,10 @@ package god
 type Acceptor struct {
 }
 
-func (a *Acceptor) HandleCast() {
+func (a *Acceptor) Run() {
+
+}
+
+func (a *Acceptor) Stop() {
 
 }

@@ -1,1 +1,1 @@
-SConscript(dirs=['src', 'doc'])
+SConscript(dirs=['doc', 'src'])

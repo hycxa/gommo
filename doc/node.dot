@@ -1,28 +1,33 @@
 digraph G {
-	//graph [label="App Node Model"];
-	//node [colorscheme=rdbu11 fontsize=12];
-	//edge [colorscheme=rdbu11 fontsize=12];
-	//
-	subgraph clusterNode1 {
 
-		Process1 -> Process2 [label="call[1,1]"]
-
-		Process2 -> Process1 [label="reply[1,2]"]
-
-		Process1 -> Process2 [label="notify[2]"]
-
-		Process3 -> Node1 [label="call[3,1]"]
-	}
-	
-
-	clusterNode1 -> clusterNode2 [label="call[3,2]"]
-
-	subgraph clusterNode2 {
-
-		Node2 -> Process4 [label="call[3,3]"]
-
-		Process4 -> Node2 [label="reply[2]"]
-
+	subgraph clusterN1 {
+		graph [label="Node1"]
+		checkw2 [label="Is Worker2 exist?" shape="diamond"]
+		checkw3 [label="Is Worker3 exist?" shape="diamond"]
+		findw3 [label="Where is Worker3" shape="diamond"]
+		w1 [label="Worker1"]
+		w2 [label="Worker2"]
+		ns2 [label="Sender of Node2"]
+		nr2 [label="Receiver of Node2"]
 	}
 
+	subgraph clusterN2 {
+		graph [label="Node2"]
+		w3 [label="Worker3"]
+		ns1 [label="Sender of Node1"]
+		nr1 [label="Receiver of Node1"]
+	}
+
+	w1 -> checkw2 [label="1.Check Worker2"]
+	checkw2 -> w2 [label="2.Yes, Cast to Worker2"]
+
+	w2 -> checkw3 [label="3.Check Worker3"]
+	checkw3 -> findw3 [label="4.No"]
+	findw3 -> w2 [label="5.Worker3 is in Node2"]
+	w2 -> ns2 [label="6.Cast to Sender of Node2"]
+	ns2 -> nr1 [label="7.Encode and Cast to Receiver of Node1"]
+	nr1 -> w3 [label="8.Decode and Cast to Worker3"]
+	w3 -> ns1 [label="9.Cast to Sender of Node1"]
+	ns1 -> nr2 [label="10.Encode and Cast to Receiver of Node2"]
+	nr2 -> w1 [label="11.Decode and Cast to Worker1"]
 }

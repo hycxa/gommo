@@ -1,0 +1,48 @@
+digraph G {
+	subgraph clusterNode1 {
+		graph [label="Node1"]
+		subgraph clusterAgent1 {
+			graph [label="Agent1"]
+			r1 [label="Receiver of Client1\n(Runner/Decoder)"]
+			s1 [label="Sender of Client1\n(Runner/Encoder)"]
+			h1 [label="Handler of Client1\n(Runner/Handler)"]
+			//t1 [label="Transfer of Client\n(Runner/BinaryIn/BinaryOut)"]
+		}
+
+		nr2 [label="Receiver of Node2"]
+		ns2 [label="Sender of Node2"]
+	}
+
+	subgraph clusterNode2 {
+		graph [label="Node2"]
+		subgraph clusterAgent2 {
+			graph [label="Agent2"]
+			r2 [label="Receiver of Client2"]
+			s2 [label="Sender of Client2"]
+			h2 [label="Handler of Client2"]
+		}
+
+		w2 [label="Worker2\nRunner/MessageIn/MessageOut"]
+		nr1 [label="Receiver of Node1"]
+		ns1 [label="Sender of Node1"]
+	}
+
+	c1 [label="Client1"]
+	c2 [label="Client2"]
+
+	c1 -> r1 [label="1."]
+	r1 -> h1 [label="2."]
+	h1 -> ns2 [label="3."]
+	ns2 -> nr1 [label="4."]
+	nr1 -> h2 [label="5."] 
+	h2 -> s2  [label="6."]
+	s2 -> c2 [label="7."]
+	c2 -> r2 [label="8."]
+	r2 -> h2 [label="9."]
+	h2 -> w2 [label="10."]
+	w2 -> ns1 [label="11."]
+	ns1 -> nr2 [label="12."]
+	nr2 -> h1 [label="13."]
+	h1 -> s1 [label="14."]
+	s1 -> c1 [label="15."]
+}

@@ -1,8 +1,14 @@
 package god
 
+import (
+	"runtime"
+)
+
 type Console struct {
 }
 
-func (c *Console) HandleCast() {
-
+func (c *Console) Run() {
+	for {
+		runtime.Gosched()
+	}
 }

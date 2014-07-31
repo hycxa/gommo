@@ -1,0 +1,39 @@
+digraph G {
+
+	subgraph clusterNodeA {
+		graph [label="NodeA"]
+		NodeAcceptorA
+		ClientAcceptorA
+
+		subgraph clusterNodeAgentB {
+			graph [label="NodeAgentB"]
+			NodeReceiverFromB
+			NodeSenderToB
+		}
+
+		WorkerA
+
+		subgraph clusterClientAgent1 {
+			ClientReceiverFrom1
+			ClientHandler1
+			ClientSenderTo1
+		}
+	}
+
+	subgraph clusterNodeB {
+		graph [label="NodeB"]
+		NodeAcceptorB
+
+		subgraph clusterNodeAgentA {
+			graph [label="NodeAgentA"]
+			NodeReceiverFromA
+			NodeSenderToA
+		}
+
+	}
+
+	NodeAConnectToB -> NodeAcceptorB [label="1.OnConnected,Create NodeAgentB\nOnAccept,Create NodeAgentA"]
+	NodeSenderToB -> NodeReceiverFromA [label="2.SyncNodeInfo,AddToNodeManager"]
+
+	Client1ConnectToA -> ClientAcceptorA [label="1.OnConnected,Create ClientAgent1"]
+}
