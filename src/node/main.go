@@ -2,14 +2,17 @@ package main
 
 import (
 	"god"
+	"net"
 )
 
 func main() {
-	acceptor := god.NewWorker(&god.Acceptor{})
+	nodeAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}, &god.NodeAgentCreator{}))
+	clientAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}))
 	// node_manager, id := god.NewWorker(&god.NodeManager{})
 	// worker_manager, id := god.NewWorker(&god.WorkerManager{})
 	console := &god.Console{}
 
 	console.Run()
-	acceptor.Stop()
+	clientAcceptor.Stop()
+	nodeAcceptor.Stop()
 }

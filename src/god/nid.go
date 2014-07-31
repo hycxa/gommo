@@ -1,3 +1,3 @@
 package god
 
-type NID uint64
+type PID uint64

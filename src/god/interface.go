@@ -1,13 +1,24 @@
 package god
 
 import (
-	"bytes"
+	"net"
 )
 
-type Message interface{}
+var (
+	nodeManager map[PID]NodeSender
+)
+
+type Header struct {
+	Source PID
+	Target PID
+	Size PID
+}
+
+type Message interface{
+}
 
 type Decoder interface {
-	Decode(bytes.Buffer) *Message
+	Decode([]byte) Message
 }
 
 type NodeDecoder struct {
@@ -17,7 +28,7 @@ type ClientDecoder struct {
 }
 
 type Encoder interface {
-	Encode(*Message) bytes.Buffer
+	Encode(Message) []byte
 }
 
 type NodeEncoder struct {
@@ -27,8 +38,34 @@ type ClientEncoder struct {
 }
 
 type Worker interface {
-	ID() NID
+	PID() PID
+	Cast(source PID, message Message)
 	Stop()
+}
+
+func FindWorker(pid PID) Worker {
+	
+}
+
+func FindNodeOfWorker(pid PID) NodeSender{
+	
+}
+
+func Cast(source ID, target PID, message Message) {
+	worker := FindWorker(target)
+	if worker != nil {
+		worker.Cast(source, message)
+	}
+
+	sender := FindNodeOfWorker(target)
+	if sender != nil {
+		sender.Cast(source, target, message)
+	}
+}
+
+func (r *ClientReceiver) Run() {
+	message := Decode()
+	Cast(handlerID, handlerID, message)
 }
 
 type Runner interface {
@@ -36,14 +73,19 @@ type Runner interface {
 	Stop()
 }
 
+type AgentCreator interface {
+	Create(net.Conn)
+}
+
 //func NewWorker(Runner) Worker
 
-type receiveRunner struct {
+type Receiver struct {
 }
 
 //func NewReceiver(Decoder) Runner
 
-type senderRunner struct {
+type NodeSender interface {
+	Cast(source, target, Message)
 }
 
 //func NewSender(Encoder) Runner
@@ -56,5 +98,5 @@ type handleRunner struct{}
 
 // Message in / out
 type Handler interface {
-	Handle(*Message)
+	Handle(source PID, Message)
 }

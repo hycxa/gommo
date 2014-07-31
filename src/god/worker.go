@@ -1,13 +1,19 @@
 package god
 
 func NewWorker(r Runner) Worker {
-	return &worker{r}
+	go r.Run()
+	return &worker{r, 0}
 }
 
 type worker struct {
 	Runner
+	NID
 }
 
 func (w *worker) ID() NID {
-	return 0
+	return w.NID
+}
+
+func (w *worker) () {
+	
 }
