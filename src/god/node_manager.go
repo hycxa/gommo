@@ -1,13 +1,27 @@
 package god
 
-var (
-	nodeManager NodeManager
-)
+var nodes = make(map[PID]NodeSender)
 
-type NodeManager struct {
-	nodeSenders map[PID]NodeSender
+func FindWorker(pid PID) Worker {
+	return nil
+
 }
 
-func (n *NodeManager) Add(pid PID, nodeSender NodeSender) {
-	n.nodeSenders[pid] = nodeSender
+func FindNodeOfWorker(pid PID) NodeSender {
+	return nil
+}
+
+func Cast(source PID, target PID, message Message) {
+	worker := FindWorker(target)
+	if worker != nil {
+		worker.Cast(source, message)
+	}
+
+	sender := FindNodeOfWorker(target)
+	if sender != nil {
+		sender.Cast(source, target, message)
+	}
+}
+func AddNode(pid PID, nodeSender NodeSender) {
+	nodes[pid] = nodeSender
 }

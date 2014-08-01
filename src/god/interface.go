@@ -1,41 +1,51 @@
 package god
 
 import (
+	"encoding/binary"
 	"net"
-)
-
-var (
-	nodeManager map[PID]NodeSender
 )
 
 type Header struct {
 	Source PID
 	Target PID
-	Size PID
+	Size   PID
 }
 
-type Message interface{
+type Message interface {
 }
 
-type Decoder interface {
-	Decode([]byte) Message
+type MessageList chan Message
+
+var (
+	BYTE_ORDER = binary.LittleEndian
+)
+
+type Decode func([]byte) Message
+
+func DefaultDecode([]byte) Message {
+	return nil
 }
 
-type NodeDecoder struct {
+type Encode func(Message) []byte
+
+func DefaultEncode(Message) []byte {
+	return nil
 }
 
-type ClientDecoder struct {
+type Compress func([]byte) []byte
+
+func DefaultCompress(in []byte) []byte {
+	return in
 }
 
-type Encoder interface {
-	Encode(Message) []byte
+type Decompress func([]byte) []byte
+
+func DefaultDecompress(in []byte) []byte {
+	return in
 }
 
-type NodeEncoder struct {
-}
-
-type ClientEncoder struct {
-}
+type Encrypt func([]byte) []byte
+type Decrypt func([]byte) []byte
 
 type Worker interface {
 	PID() PID
@@ -43,60 +53,24 @@ type Worker interface {
 	Stop()
 }
 
-func FindWorker(pid PID) Worker {
-	
-}
-
-func FindNodeOfWorker(pid PID) NodeSender{
-	
-}
-
-func Cast(source ID, target PID, message Message) {
-	worker := FindWorker(target)
-	if worker != nil {
-		worker.Cast(source, message)
-	}
-
-	sender := FindNodeOfWorker(target)
-	if sender != nil {
-		sender.Cast(source, target, message)
-	}
-}
-
-func (r *ClientReceiver) Run() {
-	message := Decode()
-	Cast(handlerID, handlerID, message)
-}
-
 type Runner interface {
 	Run()
 	Stop()
 }
 
-type AgentCreator interface {
-	Create(net.Conn)
-}
-
-//func NewWorker(Runner) Worker
-
-type Receiver struct {
-}
-
-//func NewReceiver(Decoder) Runner
+type Conn net.Conn
+type NewAgent func(Conn)
 
 type NodeSender interface {
-	Cast(source, target, Message)
+	Cast(source PID, target PID, message Message)
 }
 
-//func NewSender(Encoder) Runner
-
-type handleRunner struct{}
-
-//func NewHandler(Handler) Runner
-
-// func NewWorker(NewReceiver(NodeDecoder)) Runner
+type Messenger interface {
+	Post(target PID, message Message)
+}
 
 // Message in / out
 type Handler interface {
-	Handle(source PID, Message)
+	Send(target PID, message Message)
+	Handle(source PID, message Message)
 }

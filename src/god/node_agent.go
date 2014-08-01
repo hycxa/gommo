@@ -1,21 +1,11 @@
 package god
 
-import (
-	"net"
-)
+import ()
 
-type NodeAgentCreator struct {
+type NodeNewAgent struct {
 }
 
-func (n *NodeAgentCreator) Create(conn net.Conn) {
-	NewWorker(NewReceiver(conn, &NodeDecoder{}))
-	NewWorker(NewSender(conn, &NodeEncoder{}))
-}
-
-func (d *NodeDecoder) Decode([]byte) *Message {
-	return nil
-}
-
-func (e *NodeEncoder) Encode(*Message) []byte {
-	return nil
+func NewNodeAgent(conn Conn) {
+	NewWorker(NewNodeReceiver(conn, DefaultDecode, nil))
+	NewWorker(NewNodeSender(conn, DefaultEncode, nil))
 }

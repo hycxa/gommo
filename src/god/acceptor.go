@@ -5,24 +5,24 @@ import (
 	"net"
 )
 
-type Acceptor struct {
+type acceptor struct {
 	net.Listener
-	AgentCreator
+	NewAgent
 }
 
-func NewAcceptor(addr net.Addr, creator AgentCreator) Runner {
+func NewAcceptor(addr net.Addr, newAgent NewAgent) Runner {
 	listener, err := net.Listen("tcp", addr.String())
 	ext.AssertE(err)
-	return &Acceptor{listener, creator}
+	a := &acceptor{listener, newAgent}
+	return a
 }
 
-func (a *Acceptor) Run() {
+func (a *acceptor) Run() {
 	conn, err := a.Listener.Accept()
 	ext.AssertE(err)
-
-	a.Create(conn)
+	a.NewAgent(conn)
 }
 
-func (a *Acceptor) Stop() {
+func (a *acceptor) Stop() {
 
 }

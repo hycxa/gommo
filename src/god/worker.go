@@ -1,19 +1,25 @@
 package god
 
+var (
+	workers = make(map[PID]Worker)
+)
+
 func NewWorker(r Runner) Worker {
 	go r.Run()
-	return &worker{r, 0}
+
+	return &worker{Runner: r, pid: 0}
 }
 
 type worker struct {
+	MessageQueue
 	Runner
-	NID
+	pid PID
 }
 
-func (w *worker) ID() NID {
-	return w.NID
+func (w *worker) PID() PID {
+	return w.pid
 }
 
-func (w *worker) () {
-	
+func (w *worker) Cast(source PID, msg Message) {
+	w.Push(source, w.pid, msg)
 }

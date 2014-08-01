@@ -1,45 +1,47 @@
 package god
 
 import (
-	"net"
+	"bytes"
+	"encoding/gob"
+	"ext"
 )
 
-type nodeMessage struct {
-	source PID
-	target PID
-	Message
-}
-
 type nodeSender struct {
-	net.Conn
-	messageList chan[nodeMessage]
+	Conn
+	Encode
+	Compress
+
+	runner
+	outgoing MessageQueue
 }
 
-func NewNodeSender(net.Conn, Encoder) Runner {
-	n := &nodeSender{}
-	n.messageList = {}
-	nodeManager.Add(pid, nodeSender)
-	return &nodeSender{}
+func NewNodeSender(conn Conn, encode Encode, compress Compress) Runner {
+	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress}
+	go s.Run()
+	return s
 }
 
-func (s *nodeSender) Cast(source PID, target PID, message Message) {
+func (s *nodeSender) Run() {
+	for {
+		source, target, msg := s.outgoing.Pop()
+		data := s.Encode(msg)
+		ext.Assert(data != nil)
 
-}
-func (r *nodeSender) Run() {
-	m <- r.messageList
-	var h Header
-	h.Source = m.source
-	h.Target = m.target
-	data := Encode(m)
-	h.Size = len(data)
-	headerBinary = Encode(h)
-	size := sizeof(m.source) + sizeof(m.target) + len(bin)
-	r.Conn.Write(size)
-	r.Conn.Write(m.source)
-	r.Conn.Write(m.target)
-	r.Conn.Write(m)
-}
+		var buf bytes.Buffer
 
-func (r *nodeSender) Stop() {
+		enc := gob.NewEncoder(&buf)
+		ext.AssertE(enc.Encode(source))
+		ext.AssertE(enc.Encode(target))
+		ext.AssertE(enc.Encode(len(data)))
+		ext.AssertE(enc.Encode(data))
 
+		data = buf.Bytes()
+		if s.Compress != nil {
+			data = s.Compress(buf.Bytes())
+		}
+		var bufSize []byte
+		BYTE_ORDER.PutUint32(bufSize, uint32(len(data)))
+		s.Conn.Write(bufSize)
+		s.Conn.Write(data)
+	}
 }
