@@ -2,6 +2,10 @@ package god
 
 var nodes = make(map[PID]NodeSender)
 
+func init() {
+	Console().RegCmdFunc("nodes", listNodes)
+}
+
 func FindWorker(pid PID) Worker {
 	return nil
 
@@ -22,6 +26,11 @@ func Cast(source PID, target PID, message Message) {
 		sender.Cast(source, target, message)
 	}
 }
+
 func AddNode(pid PID, nodeSender NodeSender) {
 	nodes[pid] = nodeSender
+}
+
+func listNodes([]string) interface{} {
+	return nodes
 }

@@ -2,6 +2,7 @@ package god
 
 /*
 #include <readline/readline.h>
+#include <readline/history.h>
 #include <stdlib.h>
 #cgo LDFLAGS: -lreadline
 */
@@ -13,15 +14,23 @@ import (
 	"unsafe"
 )
 
-type gmCommand struct {
-	command string
-	args    []string
+type cmdFunc func([]string) interface{}
+type cmdFuncMap map[string]cmdFunc
+
+type console struct {
+	runner
+	funcs cmdFuncMap
 }
 
-type Console struct {
+var (
+	cons = &console{funcs: make(cmdFuncMap)}
+)
+
+func Console() *console {
+	return cons
 }
 
-func (c *Console) Run() {
+func (c *console) Run() {
 	re := regexp.MustCompile(`\w+`)
 	prompt := C.CString("god> ")
 	defer C.free(unsafe.Pointer(prompt))
@@ -39,9 +48,14 @@ func (c *Console) Run() {
 		line = C.GoString(cline)
 		args := re.FindAllString(line, -1)
 		if len(args) > 0 {
-			cmd := gmCommand{args[0], args[1:]}
-			Cast(0, 0, &cmd)
-			fmt.Printf("%v\n", cmd)
+			f := c.funcs[args[0]]
+			if f != nil {
+				fmt.Printf("%q\t%q\t%q\n", args[0], args[1:], f(args[1:]))
+			}
 		}
 	}
+}
+
+func (c *console) RegCmdFunc(cmd string, f cmdFunc) {
+	c.funcs[cmd] = f
 }
