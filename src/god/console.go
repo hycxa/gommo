@@ -9,13 +9,20 @@ import "C"
 
 import (
 	"fmt"
+	"regexp"
 	"unsafe"
 )
+
+type gmCommand struct {
+	command string
+	args    []string
+}
 
 type Console struct {
 }
 
 func (c *Console) Run() {
+	re := regexp.MustCompile(`\w+`)
 	prompt := C.CString("god> ")
 	defer C.free(unsafe.Pointer(prompt))
 	var line string
@@ -30,6 +37,11 @@ func (c *Console) Run() {
 
 		C.add_history(cline)
 		line = C.GoString(cline)
-		fmt.Printf("%v\n", line)
+		args := re.FindAllString(line, -1)
+		if len(args) > 0 {
+			cmd := gmCommand{args[0], args[1:]}
+			Cast(0, 0, &cmd)
+			fmt.Printf("%v\n", cmd)
+		}
 	}
 }
