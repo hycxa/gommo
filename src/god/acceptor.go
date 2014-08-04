@@ -11,8 +11,8 @@ type acceptor struct {
 	runner
 }
 
-func NewAcceptor(addr net.Addr, newAgent NewAgent) Runner {
-	listener, err := net.Listen("tcp", addr.String())
+func NewAcceptor(addr string, newAgent NewAgent) Runner {
+	listener, err := net.Listen("tcp", addr)
 	ext.AssertE(err)
 	a := &acceptor{Listener: listener, NewAgent: newAgent}
 	return a
