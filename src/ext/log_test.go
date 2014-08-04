@@ -10,6 +10,6 @@ var (
 
 func TestTrace(t *testing.T) {
 	if testing.Verbose() {
-		defer tt.UT(tt.T("TestTrace"))
+		defer tt.UT(tt.T())
 	}
 }

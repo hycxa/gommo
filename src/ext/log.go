@@ -1,9 +1,9 @@
 package ext
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"runtime"
 )
 
 type Trace bool
@@ -24,23 +24,26 @@ var (
 func init() {
 }
 
-func (t Trace) T(f string, v ...interface{}) string {
+func (t Trace) T() string {
 	if t {
-		s := fmt.Sprintf(f, v...)
-		tl.Printf("->\t[%s]\n", s)
-		return s
+		p, _, _, ok := runtime.Caller(2)
+		if ok {
+			s := runtime.FuncForPC(p).Name()
+			tl.Printf("--> [%s]\n", s)
+			return s
+		}
 	}
-	return f
+	return ""
 }
 
 func (t Trace) UT(s string) {
-	if t {
-		tl.Printf("<-\t[%s]\n", s)
+	if t && len(s) > 0 {
+		tl.Printf("<-- [%s]\n", s)
 	}
 }
 
-func T(f string, v ...interface{}) string {
-	return TraceSwitch.T(f, v...)
+func T() string {
+	return TraceSwitch.T()
 }
 
 func UT(s string) {
