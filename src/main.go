@@ -1,7 +1,6 @@
 package main
 
 import (
-	"ext"
 	"flag"
 	"god"
 	"os"
@@ -27,7 +26,7 @@ func main() {
 		return
 	}
 
-	ext.TraceSwitch = true
+	//ext.TraceSwitch = true
 	god.Start(nodeListenString)
 	//clientAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}, god.NewClientAgent))
 

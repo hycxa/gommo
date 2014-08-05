@@ -16,7 +16,6 @@ func NewConnector(newAgent NewAgent) Connector {
 }
 
 func (c *connector) Dial(address string) {
-	defer ext.UT(ext.T())
 	conn, err := net.Dial("tcp", address)
 	ext.AssertE(err)
 	c.NewAgent(c.workers, conn)

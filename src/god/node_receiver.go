@@ -21,7 +21,6 @@ func NewNodeReceiver(conn net.Conn, decode Decode, decompress Decompress) Runner
 }
 
 func (r *nodeReceiver) Run() {
-	defer ext.UT(ext.T())
 	defer r.Stopped()
 	defer r.Conn.Close()
 
