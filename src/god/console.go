@@ -54,7 +54,12 @@ func (c *console) Run() {
 		if len(args) > 0 {
 			f := c.funcs[args[0]]
 			if f != nil {
-				ext.LogDebug("RUN_COMMAND\t%s\t%s\t%v\n", args[0], args[1:], f(args[1:]))
+				var ret interface{}
+				ext.PCall(
+					func() {
+						ret = f(args[1:])
+					})
+				ext.LogInfo("RUN_COMMAND\t%s\t%s\t%v\n", args[0], args[1:], ret)
 			}
 		}
 	}

@@ -1,8 +1,6 @@
 package god
 
-import (
-	"ext"
-)
+import ()
 
 var (
 	nodes         = make(map[PID]NodeSender)
@@ -22,7 +20,13 @@ func Start(listenStr string) {
 }
 
 func Quit() {
-	quit(nil)
+	nodeAcceptor.Stop()
+	nodeConnector.Stop()
+	Console().Stop()
+}
+
+func Dial(address string) {
+	nodeConnector.Dial(address)
 }
 
 func FindWorker(pid PID) Worker {
@@ -51,10 +55,7 @@ func AddNode(pid PID, nodeSender NodeSender) {
 }
 
 func dial(args []string) interface{} {
-	ext.PCall(
-		func() {
-			nodeConnector.Dial(args[0])
-		})
+	Dial(args[0])
 	return true
 }
 
@@ -63,8 +64,6 @@ func listNodes([]string) interface{} {
 }
 
 func quit([]string) interface{} {
-	nodeAcceptor.Stop()
-	nodeConnector.Stop()
-	Console().Stop()
+	Quit()
 	return true
 }
