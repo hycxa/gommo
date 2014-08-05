@@ -12,10 +12,11 @@ type connector struct {
 }
 
 func NewConnector(newAgent NewAgent) Connector {
-	return &connector{NewAgent: newAgent}
+	return &connector{NewAgent: newAgent, workers: make(WorkerMap)}
 }
 
 func (c *connector) Dial(address string) {
+	defer ext.UT(ext.T())
 	conn, err := net.Dial("tcp", address)
 	ext.AssertE(err)
 	c.NewAgent(c.workers, conn)

@@ -31,9 +31,12 @@ func Console() *console {
 }
 
 func (c *console) Run() {
-	re := regexp.MustCompile(`\w+`)
+	defer c.Stopped()
+
+	re := regexp.MustCompile(`[\w\:\.]+`)
 	prompt := C.CString("god> ")
 	defer C.free(unsafe.Pointer(prompt))
+
 	var line string
 
 	for !c.StopRequested() {
@@ -50,11 +53,10 @@ func (c *console) Run() {
 		if len(args) > 0 {
 			f := c.funcs[args[0]]
 			if f != nil {
-				fmt.Printf("%q\t%q\t%q\n", args[0], args[1:], f(args[1:]))
+				fmt.Printf("%q\t%q\t%v\n", args[0], args[1:], f(args[1:]))
 			}
 		}
 	}
-	c.Stopped()
 }
 
 func (c *console) RegCmdFunc(cmd string, f cmdFunc) {

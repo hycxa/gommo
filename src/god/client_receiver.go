@@ -10,5 +10,5 @@ func NewClientReceiver(conn Conn, handlerID PID, decode Decode, decompress Decom
 }
 
 func (r *clientReceiver) Run() {
-	r.Stopped()
+	defer r.Stopped()
 }

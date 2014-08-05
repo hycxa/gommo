@@ -21,6 +21,10 @@ func Start(listenStr string) {
 	nodeAcceptor = NewWorker(NewAcceptor(listenStr, NewNodeAgent))
 }
 
+func Quit() {
+	quit(nil)
+}
+
 func FindWorker(pid PID) Worker {
 	return nil
 
@@ -60,6 +64,7 @@ func listNodes([]string) interface{} {
 
 func quit([]string) interface{} {
 	nodeAcceptor.Stop()
+	nodeConnector.Stop()
 	Console().Stop()
 	return true
 }

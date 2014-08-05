@@ -34,6 +34,7 @@ func main() {
 	if noshell {
 		c := make(chan os.Signal)
 		<-c
+		god.Quit()
 	} else {
 		god.Console().Run()
 	}

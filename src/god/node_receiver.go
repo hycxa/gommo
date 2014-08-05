@@ -21,6 +21,8 @@ func NewNodeReceiver(Conn Conn, decode Decode, decompress Decompress) Runner {
 }
 
 func (r *nodeReceiver) Run() {
+	defer ext.UT(ext.T())
+	defer r.Stopped()
 	defer r.Conn.Close()
 	header := make([]byte, 4)
 
@@ -52,5 +54,4 @@ func (r *nodeReceiver) Run() {
 
 		Cast(source, target, msg)
 	}
-	r.Stopped()
 }

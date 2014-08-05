@@ -16,12 +16,13 @@ type nodeSender struct {
 }
 
 func NewNodeSender(conn Conn, encode Encode, compress Compress) Runner {
-	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, runner: NewRunner()}
+	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, runner: NewRunner(), outgoing: NewMessageQueue(32)}
 	go s.Run()
 	return s
 }
 
 func (s *nodeSender) Run() {
+	defer s.Stopped()
 	for !s.StopRequested() {
 		source, target, msg := s.outgoing.Pop()
 		data := s.Encode(msg)
@@ -44,5 +45,4 @@ func (s *nodeSender) Run() {
 		s.Conn.Write(bufSize)
 		s.Conn.Write(data)
 	}
-	s.Stopped()
 }

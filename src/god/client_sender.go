@@ -11,5 +11,5 @@ func NewClientSender(conn Conn, encode Encode, compress Compress, encrypt Encryp
 }
 
 func (s *clientSender) Run() {
-	s.Stopped()
+	defer s.Stopped()
 }

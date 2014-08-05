@@ -16,11 +16,12 @@ type acceptor struct {
 func NewAcceptor(addr string, newAgent NewAgent) Runner {
 	listener, err := net.Listen("tcp", addr)
 	ext.AssertE(err)
-	a := &acceptor{Listener: listener, NewAgent: newAgent, runner: NewRunner()}
+	a := &acceptor{Listener: listener, NewAgent: newAgent, runner: NewRunner(), workers: make(WorkerMap)}
 	return a
 }
 
 func (a *acceptor) Run() {
+	defer a.Stopped()
 	for !a.StopRequested() {
 		conn, err := a.Listener.Accept()
 		if err == nil {
@@ -30,7 +31,6 @@ func (a *acceptor) Run() {
 			break
 		}
 	}
-	a.Stopped()
 }
 
 func (a *acceptor) Stop() {

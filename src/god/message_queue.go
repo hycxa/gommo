@@ -18,7 +18,7 @@ type messageQueue struct {
 	messageList
 }
 
-func NewMessageBuffer(capacity int) MessageQueue {
+func NewMessageQueue(capacity int) MessageQueue {
 	return &messageQueue{capacity, make(messageList, capacity)}
 }
 

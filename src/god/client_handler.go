@@ -23,5 +23,5 @@ func (c *clientHandler) Run() {
 	// 	handler.Handle()
 	// 	handler.outgoing
 	// }
-	c.Stopped()
+	defer c.Stopped()
 }
