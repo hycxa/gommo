@@ -7,7 +7,5 @@ for name in os.listdir('.'):
 				os.chdir(fullname)
 				subprocess.check_call(['go', 'get'])
 				subprocess.check_call(['go', 'test'])
+				subprocess.check_call(['go', 'install'])
 				pass
-
-os.chdir(root)
-subprocess.check_call(['go', 'build'])
