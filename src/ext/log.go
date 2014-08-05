@@ -16,8 +16,9 @@ const (
 
 var (
 	tl          *log.Logger = log.New(os.Stdout, "[TRACE] ", log.LstdFlags)
-	dl          *log.Logger
-	el          *log.Logger
+	dl          *log.Logger = log.New(os.Stdout, "[DEBUG] ", log.LstdFlags)
+	il          *log.Logger = log.New(os.Stdout, "[INFO] ", log.LstdFlags)
+	el          *log.Logger = log.New(os.Stdout, "[ERROR] ", log.LstdFlags)
 	TraceSwitch Trace
 )
 
@@ -50,22 +51,16 @@ func UT(s string) {
 	TraceSwitch.UT(s)
 }
 
-func Debugf(format string, v ...interface{}) {
-	if dl == nil {
-		dl = log.New(os.Stdout, "[DEBUG] ", log.LstdFlags)
-	}
+func LogDebug(format string, v ...interface{}) {
 	dl.Printf(format, v...)
 }
 
-func Errorf(format string, v ...interface{}) {
-	if el == nil {
-		el = log.New(os.Stderr, "[ERROR] ", log.LstdFlags)
-	}
-	el.Printf(format, v...)
-	el.Print(Stack())
+func LogInfo(format string, v ...interface{}) {
+	il.Printf(format, v...)
 }
 
 func LogError(err error) error {
-	Errorf(err.Error())
+	el.Printf(err.Error())
+	el.Print(Stack())
 	return err
 }
