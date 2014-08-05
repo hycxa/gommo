@@ -2,11 +2,13 @@ import os, subprocess
 
 root = os.path.abspath('.')
 for name in os.listdir('.'):
-	fullname = os.path.join(root, name)
-	if os.path.isdir(fullname):
-		os.chdir(fullname)
-		subprocess.check_call(['go', 'get'])
-		subprocess.check_call(['go', 'install'])
-		subprocess.check_call(['go', 'test'])
-	pass
+		fullname = os.path.join(root, name)
+		if os.path.isdir(fullname):
+				os.chdir(fullname)
+				subprocess.check_call(['go', 'get'])
+				subprocess.check_call(['go', 'install'])
+				subprocess.check_call(['go', 'test'])
+				pass
 
+os.chdir(root)
+subprocess.check_call(['go', 'build'])

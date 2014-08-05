@@ -5,29 +5,31 @@ import (
 	"encoding/gob"
 	"ext"
 	"io"
-	"time"
+	"net"
 )
 
 type nodeReceiver struct {
-	Conn
+	net.Conn
 	Decode
 	Decompress
 
 	*runner
 }
 
-func NewNodeReceiver(Conn Conn, decode Decode, decompress Decompress) Runner {
-	return &nodeReceiver{Conn: Conn, Decode: decode, Decompress: decompress, runner: NewRunner()}
+func NewNodeReceiver(conn net.Conn, decode Decode, decompress Decompress) Runner {
+	return &nodeReceiver{Conn: conn, Decode: decode, Decompress: decompress, runner: NewRunner()}
 }
 
 func (r *nodeReceiver) Run() {
 	defer ext.UT(ext.T())
 	defer r.Stopped()
 	defer r.Conn.Close()
+
+	ext.LogInfo("The connection [%s] accepted.", r.Conn.RemoteAddr().String())
 	header := make([]byte, 4)
 
 	for !r.StopRequested() {
-		r.Conn.SetReadDeadline(time.Now().Add(time.Minute))
+		//r.Conn.SetReadDeadline(time.Now().Add(time.Minute))
 		_, err := io.ReadFull(r.Conn, header)
 		ext.AssertE(err)
 

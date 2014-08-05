@@ -1,12 +1,17 @@
-package god
+package main
+
+import (
+	"god"
+	"net"
+)
 
 type clientReceiver struct {
-	*runner
-	handlerID PID
+	god.Stopper
+	handlerID god.PID
 }
 
-func NewClientReceiver(conn Conn, handlerID PID, decode Decode, decompress Decompress, decrypt Decrypt) Runner {
-	return &clientReceiver{handlerID: handlerID, runner: NewRunner()}
+func NewClientReceiver(conn net.Conn, handlerID god.PID, decode god.Decode, decompress god.Decompress, decrypt god.Decrypt) god.Runner {
+	return &clientReceiver{handlerID: handlerID, Stopper: god.NewRunner()}
 }
 
 func (r *clientReceiver) Run() {

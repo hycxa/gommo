@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/gob"
 	"ext"
+	"net"
 )
 
 type nodeSender struct {
-	Conn
+	net.Conn
 	Encode
 	Compress
 
@@ -15,7 +16,7 @@ type nodeSender struct {
 	outgoing MessageQueue
 }
 
-func NewNodeSender(conn Conn, encode Encode, compress Compress) Runner {
+func NewNodeSender(conn net.Conn, encode Encode, compress Compress) Runner {
 	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, runner: NewRunner(), outgoing: NewMessageQueue(32)}
 	go s.Run()
 	return s

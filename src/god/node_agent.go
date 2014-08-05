@@ -1,8 +1,10 @@
 package god
 
-import ()
+import (
+	"net"
+)
 
-func NewNodeAgent(workers WorkerMap, conn Conn) {
+func NewNodeAgent(workers WorkerMap, conn net.Conn) {
 	r := NewWorker(NewNodeReceiver(conn, DefaultDecode, nil))
 	s := NewWorker(NewNodeSender(conn, DefaultEncode, nil))
 	workers[r.PID()] = r

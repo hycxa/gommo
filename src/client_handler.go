@@ -1,20 +1,24 @@
-package god
+package main
+
+import (
+	"god"
+)
 
 type clientHandler struct {
-	*runner
-	*handler
+	god.Stopper
+	god.Handler
 }
 
-func NewClientHandler(sender PID) Runner {
-	self := &clientHandler{handler: NewHandler(0), runner: NewRunner()}
+func NewClientHandler(sender god.PID) god.Runner {
+	self := &clientHandler{Handler: god.NewHandler(0), Stopper: god.NewRunner()}
 	return self
 }
 
-func (c *clientHandler) Handle(source PID, m *Message) {
+func (c *clientHandler) Handle(source god.PID, m *god.Message) {
 
 }
 
-func (c *clientHandler) BeforeOutgoing(target PID, m *Message) {
+func (c *clientHandler) BeforeOutgoing(target god.PID, m *god.Message) {
 
 }
 

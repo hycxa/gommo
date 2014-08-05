@@ -59,11 +59,13 @@ type Decrypt func([]byte) []byte
 
 type Stopper interface {
 	Stop()
+	StopRequested() bool
+	Stopped()
 }
 
 type Connector interface {
 	Dial(address string)
-	Stopper
+	Stop()
 }
 
 type Runner interface {
@@ -79,8 +81,7 @@ type Worker interface {
 
 type WorkerMap map[PID]Worker
 
-type Conn net.Conn
-type NewAgent func(WorkerMap, Conn)
+type NewAgent func(WorkerMap, net.Conn)
 
 type NodeSender interface {
 	Cast(source PID, target PID, message Message)
@@ -92,6 +93,6 @@ type Messenger interface {
 
 // Message in / out
 type Handler interface {
-	Send(target PID, message Message)
-	Handle(source PID, message Message)
+	//Send(target PID, message Message)
+	//	Handle(source PID, message Message)
 }

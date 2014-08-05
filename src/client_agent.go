@@ -1,11 +1,14 @@
-package god
+package main
 
-import ()
+import (
+	"god"
+	"net"
+)
 
-func NewClientAgent(workers WorkerMap, conn Conn) {
-	s := NewWorker(NewClientSender(conn, DefaultEncode, nil, nil))
-	h := NewWorker(NewClientHandler(s.PID()))
-	r := NewWorker(NewClientReceiver(conn, h.PID(), DefaultDecode, nil, nil))
+func NewClientAgent(workers god.WorkerMap, conn net.Conn) {
+	s := god.NewWorker(NewClientSender(conn, god.DefaultEncode, nil, nil))
+	h := god.NewWorker(NewClientHandler(s.PID()))
+	r := god.NewWorker(NewClientReceiver(conn, h.PID(), god.DefaultDecode, nil, nil))
 
 	workers[s.PID()] = s
 	workers[h.PID()] = h
