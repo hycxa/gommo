@@ -7,16 +7,16 @@ import (
 )
 
 var (
-	showHelp         bool
-	noshell          bool
-	nodeListenString string
+	showHelp     bool
+	noshell      bool
+	listenString string
 )
 
 //var clientListenString = flag.String("127.0.0.1:1119", "listen", "")
 func init() {
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&noshell, "noshell", false, "noshell")
-	flag.StringVar(&nodeListenString, "listen", "127.0.0.1:1119", "listen string, such as 127.0.0.1:1119")
+	flag.StringVar(&listenString, "listen", "127.0.0.1:1119", "listen string, such as 127.0.0.1:1119")
 	flag.Parse()
 }
 
@@ -27,7 +27,8 @@ func main() {
 	}
 
 	//ext.TraceSwitch = true
-	god.Start(nodeListenString)
+	god.StartNode(listenString)
+	connector := god.NewConnector(NewClientAgent)
 	//clientAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}, god.NewClientAgent))
 
 	if noshell {
@@ -36,6 +37,7 @@ func main() {
 		god.Quit()
 	} else {
 		god.Console().Run()
+		connector.Stop()
 	}
 	//clientAcceptor.Stop()
 }
