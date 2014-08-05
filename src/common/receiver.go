@@ -1,19 +1,19 @@
-package main
+package common
 
 import (
 	"god"
 	"net"
 )
 
-type clientReceiver struct {
+type receiver struct {
 	god.Stopper
 	handlerID god.PID
 }
 
-func NewClientReceiver(conn net.Conn, handlerID god.PID, decode god.Decode, decompress god.Decompress, decrypt god.Decrypt) god.Runner {
-	return &clientReceiver{handlerID: handlerID, Stopper: god.NewRunner()}
+func NewReceiver(conn net.Conn, handlerID god.PID, decode god.Decode, decompress god.Decompress, decrypt god.Decrypt) god.Runner {
+	return &receiver{handlerID: handlerID, Stopper: god.NewRunner()}
 }
 
-func (r *clientReceiver) Run() {
+func (r *receiver) Run() {
 	defer r.Stopped()
 }

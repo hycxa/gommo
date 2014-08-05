@@ -1,18 +1,18 @@
-package main
+package common
 
 import (
 	"god"
 	"net"
 )
 
-type clientSender struct {
+type sender struct {
 	god.Stopper
 }
 
-func NewClientSender(conn net.Conn, encode god.Encode, compress god.Compress, encrypt god.Encrypt) god.Runner {
-	return &clientSender{Stopper: god.NewRunner()}
+func NewSender(conn net.Conn, encode god.Encode, compress god.Compress, encrypt god.Encrypt) god.Runner {
+	return &sender{Stopper: god.NewRunner()}
 }
 
-func (s *clientSender) Run() {
+func (s *sender) Run() {
 	defer s.Stopped()
 }
