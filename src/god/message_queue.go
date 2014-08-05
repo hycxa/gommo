@@ -1,7 +1,7 @@
 package god
 
 type MessageQueue interface {
-	Push(source PID, target PID, m Message)   // blocking
+	Push(source PID, target PID, m Message)   // noblocking
 	Pop() (source PID, target PID, m Message) // blocking
 }
 
