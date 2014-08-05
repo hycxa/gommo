@@ -24,7 +24,7 @@ func (r *nodeReceiver) Run() {
 	defer r.Stopped()
 	defer r.Conn.Close()
 
-	ext.LogInfo("The connection [%s] accepted.", r.Conn.RemoteAddr().String())
+	ext.LogDebug("ESTABLISHED\tLOCAL\t%s\tREMOTE\t%s", r.LocalAddr().String(), r.RemoteAddr().String())
 	header := make([]byte, 4)
 
 	for !r.StopRequested() {

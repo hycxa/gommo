@@ -9,6 +9,7 @@ package god
 import "C"
 
 import (
+	"ext"
 	"fmt"
 	"regexp"
 	"unsafe"
@@ -53,7 +54,7 @@ func (c *console) Run() {
 		if len(args) > 0 {
 			f := c.funcs[args[0]]
 			if f != nil {
-				fmt.Printf("%q\t%q\t%v\n", args[0], args[1:], f(args[1:]))
+				ext.LogDebug("RUN_COMMAND\t%s\t%s\t%v\n", args[0], args[1:], f(args[1:]))
 			}
 		}
 	}
