@@ -14,7 +14,7 @@ var (
 //var clientListenString = flag.String("127.0.0.1:1119", "listen", "")
 func init() {
 	flag.BoolVar(&showHelp, "help", false, "show help")
-	flag.StringVar(&serverAddress, "server", "127.0.0.1:8888", "server address")
+	flag.StringVar(&serverAddress, "server", "127.0.0.1:3724", "server address")
 	flag.IntVar(&amount, "amount", 100, "robot amount")
 	flag.Parse()
 }

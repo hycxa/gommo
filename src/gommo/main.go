@@ -20,7 +20,7 @@ func init() {
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&noshell, "noshell", false, "noshell")
 	flag.StringVar(&listenString, "listen", "127.0.0.1:1119", "listen string, such as 127.0.0.1:1119")
-	flag.StringVar(&agentString, "agent", "127.0.0.1:8888", "agent listen address")
+	flag.StringVar(&agentString, "agent", "127.0.0.1:3724", "agent listen address")
 	flag.Parse()
 }
 
