@@ -9,21 +9,22 @@ import (
 )
 
 type nodeReceiver struct {
-	runner
 	Conn
 	Decode
 	Decompress
+
+	*runner
 }
 
 func NewNodeReceiver(Conn Conn, decode Decode, decompress Decompress) Runner {
-	return &nodeReceiver{Conn: Conn, Decode: decode, Decompress: decompress}
+	return &nodeReceiver{Conn: Conn, Decode: decode, Decompress: decompress, runner: NewRunner()}
 }
 
 func (r *nodeReceiver) Run() {
 	defer r.Conn.Close()
 	header := make([]byte, 4)
 
-	for {
+	for !r.StopRequested() {
 		r.Conn.SetReadDeadline(time.Now().Add(time.Minute))
 		_, err := io.ReadFull(r.Conn, header)
 		ext.AssertE(err)
@@ -51,4 +52,5 @@ func (r *nodeReceiver) Run() {
 
 		Cast(source, target, msg)
 	}
+	r.Stopped()
 }

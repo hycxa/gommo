@@ -18,12 +18,12 @@ type cmdFunc func([]string) interface{}
 type cmdFuncMap map[string]cmdFunc
 
 type console struct {
-	runner
+	*runner
 	funcs cmdFuncMap
 }
 
 var (
-	cons = &console{funcs: make(cmdFuncMap)}
+	cons = &console{funcs: make(cmdFuncMap), runner: NewRunner()}
 )
 
 func Console() *console {
@@ -36,7 +36,7 @@ func (c *console) Run() {
 	defer C.free(unsafe.Pointer(prompt))
 	var line string
 
-	for line != "q" {
+	for !c.StopRequested() {
 		cline := C.readline(prompt)
 		defer C.free(unsafe.Pointer(cline))
 		if cline == nil {
@@ -54,6 +54,7 @@ func (c *console) Run() {
 			}
 		}
 	}
+	c.Stopped()
 }
 
 func (c *console) RegCmdFunc(cmd string, f cmdFunc) {

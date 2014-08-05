@@ -28,7 +28,7 @@ func main() {
 	}
 
 	ext.TraceSwitch = true
-	nodeAcceptor := god.NewWorker(god.NewAcceptor(nodeListenString, god.NewNodeAgent))
+	god.Start(nodeListenString)
 	//clientAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}, god.NewClientAgent))
 
 	if noshell {
@@ -38,5 +38,4 @@ func main() {
 		god.Console().Run()
 	}
 	//clientAcceptor.Stop()
-	nodeAcceptor.Stop()
 }

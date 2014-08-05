@@ -1,12 +1,12 @@
 package god
 
 type clientHandler struct {
-	runner
+	*runner
 	*handler
 }
 
 func NewClientHandler(sender PID) Runner {
-	self := &clientHandler{handler: NewHandler(0)}
+	self := &clientHandler{handler: NewHandler(0), runner: NewRunner()}
 	return self
 }
 
@@ -23,4 +23,5 @@ func (c *clientHandler) Run() {
 	// 	handler.Handle()
 	// 	handler.outgoing
 	// }
+	c.Stopped()
 }

@@ -1,7 +1,9 @@
 package god
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"net"
 )
 
@@ -22,14 +24,22 @@ var (
 
 type Decode func([]byte) Message
 
-func DefaultDecode([]byte) Message {
-	return nil
+func DefaultDecode(b []byte) Message {
+	buf := bytes.NewBuffer(b)
+	dec := gob.NewDecoder(buf)
+	var m Message
+	dec.Decode(&m)
+	return m
 }
 
 type Encode func(Message) []byte
 
-func DefaultEncode(Message) []byte {
-	return nil
+func DefaultEncode(m Message) []byte {
+	var buf bytes.Buffer
+
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(m)
+	return buf.Bytes()
 }
 
 type Compress func([]byte) []byte
@@ -47,19 +57,30 @@ func DefaultDecompress(in []byte) []byte {
 type Encrypt func([]byte) []byte
 type Decrypt func([]byte) []byte
 
-type Worker interface {
-	PID() PID
-	Cast(source PID, message Message)
+type Stopper interface {
 	Stop()
+}
+
+type Connector interface {
+	Dial(address string)
+	Stopper
 }
 
 type Runner interface {
 	Run()
-	Stop()
+	Stopper
 }
 
+type Worker interface {
+	PID() PID
+	Cast(source PID, message Message)
+	Runner
+}
+
+type WorkerMap map[PID]Worker
+
 type Conn net.Conn
-type NewAgent func(Conn)
+type NewAgent func(WorkerMap, Conn)
 
 type NodeSender interface {
 	Cast(source PID, target PID, message Message)

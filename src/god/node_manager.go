@@ -1,9 +1,24 @@
 package god
 
-var nodes = make(map[PID]NodeSender)
+import (
+	"ext"
+)
+
+var (
+	nodes         = make(map[PID]NodeSender)
+	nodeConnector = NewConnector(NewNodeAgent)
+	nodeAcceptor  Worker
+)
 
 func init() {
+	Console().RegCmdFunc("dial", dial)
 	Console().RegCmdFunc("nodes", listNodes)
+	Console().RegCmdFunc("q", quit)
+	Console().RegCmdFunc("quit", quit)
+}
+
+func Start(listenStr string) {
+	nodeAcceptor = NewWorker(NewAcceptor(listenStr, NewNodeAgent))
 }
 
 func FindWorker(pid PID) Worker {
@@ -31,6 +46,20 @@ func AddNode(pid PID, nodeSender NodeSender) {
 	nodes[pid] = nodeSender
 }
 
+func dial(args []string) interface{} {
+	ext.PCall(
+		func() {
+			nodeConnector.Dial(args[0])
+		})
+	return true
+}
+
 func listNodes([]string) interface{} {
 	return nodes
+}
+
+func quit([]string) interface{} {
+	nodeAcceptor.Stop()
+	Console().Stop()
+	return true
 }

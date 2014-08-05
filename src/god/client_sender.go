@@ -3,12 +3,13 @@ package god
 import ()
 
 type clientSender struct {
-	runner
+	*runner
 }
 
 func NewClientSender(conn Conn, encode Encode, compress Compress, encrypt Encrypt) Runner {
-	return nil
+	return &clientSender{runner: NewRunner()}
 }
 
-func (r *clientSender) Run() {
+func (s *clientSender) Run() {
+	s.Stopped()
 }
