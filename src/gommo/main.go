@@ -1,22 +1,26 @@
 package main
 
 import (
+	"ext"
 	"flag"
 	"god"
 	"os"
 )
 
 var (
+	trace        bool
 	showHelp     bool
 	noshell      bool
 	listenString string
+	agentString  string
 )
 
-//var clientListenString = flag.String("127.0.0.1:1119", "listen", "")
 func init() {
+	flag.BoolVar(&trace, "trace", false, "show help")
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&noshell, "noshell", false, "noshell")
 	flag.StringVar(&listenString, "listen", "127.0.0.1:1119", "listen string, such as 127.0.0.1:1119")
+	flag.StringVar(&agentString, "agent", "127.0.0.1:8888", "agent listen address")
 	flag.Parse()
 }
 
@@ -26,10 +30,11 @@ func main() {
 		return
 	}
 
-	//ext.TraceSwitch = true
+	if trace {
+		ext.TraceSwitch = true
+	}
 	god.StartNode(listenString)
-	connector := god.NewConnector(NewClientAgent)
-	//clientAcceptor := god.NewWorker(god.NewAcceptor(&net.TCPAddr{}, god.NewClientAgent))
+	acceptor := god.NewWorker(god.NewAcceptor(agentString, NewClientAgent))
 
 	if noshell {
 		c := make(chan os.Signal)
@@ -37,7 +42,6 @@ func main() {
 		god.Quit()
 	} else {
 		god.Console().Run()
-		connector.Stop()
+		acceptor.Stop()
 	}
-	//clientAcceptor.Stop()
 }
