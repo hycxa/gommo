@@ -5,7 +5,7 @@ import (
 )
 
 func NewNodeAgent(workers WorkerMap, conn net.Conn) {
-	h := NewWorker(NewNodeHandler(conn))
+	//  TODO 	h := NewWorker(NewNodeHandler(conn))
 	r := NewWorker(NewNodeReceiver(conn, DefaultDecode, nil))
 	s := NewWorker(NewNodeSender(conn, DefaultEncode, nil))
 	workers[r.PID()] = r
