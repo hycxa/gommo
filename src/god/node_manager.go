@@ -4,7 +4,7 @@ import ()
 
 var (
 	nodes         = make(map[PID]NodeSender)
-	nodeConnector = NewConnector(NewNodeAgent)
+	nodeConnector Connector
 	nodeAcceptor  Worker
 )
 
@@ -15,13 +15,18 @@ func init() {
 	Console().RegCmdFunc("quit", quit)
 }
 
-func Start(listenStr string) {
+func StartNode(listenStr string) {
 	nodeAcceptor = NewWorker(NewAcceptor(listenStr, NewNodeAgent))
+	nodeConnector = NewConnector(NewNodeAgent)
 }
 
 func Quit() {
-	nodeAcceptor.Stop()
-	nodeConnector.Stop()
+	if nodeAcceptor != nil {
+		nodeAcceptor.Stop()
+	}
+	if nodeConnector != nil {
+		nodeConnector.Stop()
+	}
 	Console().Stop()
 }
 
