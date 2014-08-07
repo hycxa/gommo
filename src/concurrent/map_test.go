@@ -2,7 +2,14 @@ package concurrent
 
 import (
 	"ext"
+	//"math/rand"
+	"runtime"
+	//"sync"
 	"testing"
+)
+
+var (
+	maxprocs = runtime.GOMAXPROCS(4)
 )
 
 type intBoolMap map[int]bool
@@ -30,24 +37,57 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 }
 
-func BenchmarkMapParallelSet(b *testing.B) {
-	m := make(uint64BoolMap)
+// func BenchmarkMapParallel(b *testing.B) {
+// 	m := make(map[string]bool)
+// 	var wg sync.WaitGroup
+// 	wg.Add(3)
 
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			m[ext.RandomUint64()] = true
-		}
-	})
-}
+// 	go func() {
+// 		defer wg.Done()
+// 		for {
+// 			m[string(rand.Int())] = true
+// 		}
+// 	}()
 
-func BenchmarkMapParallelGet(b *testing.B) {
-	m := make(uint64BoolMap)
+// 	go func() {
+// 		defer wg.Done()
+// 		for {
+// 			if m[string(rand.Int())] {
 
-	b.RunParallel(func(pb *testing.PB) {
-		// Each goroutine has its own bytes.Buffer.
-		for pb.Next() {
-			_, ok := m[ext.RandomUint64()]
-			ext.Assert(ok == false)
-		}
-	})
-}
+// 			}
+// 		}
+
+// 	}()
+
+// 	go func() {
+// 		defer wg.Done()
+// 		for {
+// 			delete(m, string(rand.Int()))
+// 		}
+
+// 	}()
+
+// 	wg.Wait()
+// }
+
+// func BenchmarkMapParallelSet(b *testing.B) {
+// 	m := make(uint64BoolMap)
+
+// 	b.RunParallel(func(pb *testing.PB) {
+// 		for pb.Next() {
+// 			m[ext.RandomUint64()] = true
+// 		}
+// 	})
+// }
+
+// func BenchmarkMapParallelGet(b *testing.B) {
+// 	m := make(uint64BoolMap)
+
+// 	b.RunParallel(func(pb *testing.PB) {
+// 		// Each goroutine has its own bytes.Buffer.
+// 		for pb.Next() {
+// 			_, ok := m[ext.RandomUint64()]
+// 			ext.Assert(ok == false)
+// 		}
+// 	})
+// }
