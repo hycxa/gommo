@@ -35,9 +35,7 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 }
 
-func TestChanMap(t *testing.T) {
-	m := NewChanMap()
-
+func testParallelMap(t *testing.T, m ParallelMap) {
 	AssertT(t, m.Set(10, 100))
 	v, ok := m.Get(10).(int)
 	AssertT(t, ok && v == 100)
@@ -45,7 +43,11 @@ func TestChanMap(t *testing.T) {
 	AssertT(t, m.Get(10) == nil)
 }
 
-func benchmarkParallelMap(b *testing.B, m Map) {
+func TestChanMap(t *testing.T) {
+	testParallelMap(t, NewChanMap())
+}
+
+func benchmarkParallelMap(b *testing.B, m ParallelMap) {
 	var wg sync.WaitGroup
 	wg.Add(3)
 
@@ -78,7 +80,7 @@ func benchmarkParallelMap(b *testing.B, m Map) {
 	wg.Wait()
 }
 
-func benchmarkMapSet(b *testing.B, m Map) {
+func benchmarkMapSet(b *testing.B, m ParallelMap) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			AssertB(b, m.Set(RandomUint64(), true))
@@ -86,7 +88,7 @@ func benchmarkMapSet(b *testing.B, m Map) {
 	})
 }
 
-func benchmarkMapGet(b *testing.B, m Map) {
+func benchmarkMapGet(b *testing.B, m ParallelMap) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			m.Get(RandomUint64())
@@ -94,7 +96,7 @@ func benchmarkMapGet(b *testing.B, m Map) {
 	})
 }
 
-func benchmarkMapDelete(b *testing.B, m Map) {
+func benchmarkMapDelete(b *testing.B, m ParallelMap) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			AssertB(b, m.Delete(RandomUint64()))

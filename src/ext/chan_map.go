@@ -21,7 +21,7 @@ type chanMap struct {
 	cmdChan chan cmdInfo // get chan
 }
 
-func NewChanMap() Map {
+func NewChanMap() ParallelMap {
 	c := chanMap{}
 	c.m = make(map[interface{}]interface{})
 	c.cmdChan = make(chan cmdInfo, 8)

@@ -1,6 +1,6 @@
 package ext
 
-type Map interface {
+type ParallelMap interface {
 	Set(k, v interface{}) bool
 	Get(k interface{}) interface{}
 	Delete(k interface{}) bool
