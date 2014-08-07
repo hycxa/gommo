@@ -71,6 +71,10 @@ func TestChanMap(t *testing.T) {
 	testParallelMap(t, NewChanMap())
 }
 
+func TestLockMap(t *testing.T) {
+	testParallelMap(t, NewLockMap())
+}
+
 func benchmarkParallelMap(b *testing.B, m ParallelMap) {
 	var wg sync.WaitGroup
 	wg.Add(3)
@@ -82,7 +86,6 @@ func benchmarkParallelMap(b *testing.B, m ParallelMap) {
 		for i := 0; i < b.N; i++ {
 			m.Set(string(RandomUint64()), true)
 		}
-		//AssertB(b, m.Len() == b.N)
 	}()
 
 	go func() {
@@ -152,4 +155,20 @@ func BenchmarkChanMapGet(b *testing.B) {
 
 func BenchmarkChanMapDelete(b *testing.B) {
 	benchmarkMapDelete(b, NewChanMap())
+}
+
+func BenchmarkLockMap(b *testing.B) {
+	benchmarkParallelMap(b, NewLockMap())
+}
+
+func BenchmarkLockMapSet(b *testing.B) {
+	benchmarkMapSet(b, NewLockMap())
+}
+
+func BenchmarkLockMapGet(b *testing.B) {
+	benchmarkMapGet(b, NewLockMap())
+}
+
+func BenchmarkLockMapDelete(b *testing.B) {
+	benchmarkMapDelete(b, NewLockMap())
 }
