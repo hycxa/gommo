@@ -1,7 +1,6 @@
 package ext
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -17,17 +16,15 @@ func AssertE(err error) {
 	}
 }
 
-func AssertT(t *testing.T, condition bool, f string, v ...interface{}) {
+func AssertT(t *testing.T, condition bool) {
 	if !condition {
-		s := fmt.Sprintf(f, v...)
-		t.Fatalf("%s\n%s", s, Stack())
+		t.Fatalf(Stack())
 	}
 }
 
-func AssertB(b *testing.B, condition bool, f string, v ...interface{}) {
+func AssertB(b *testing.B, condition bool) {
 	if !condition {
-		s := fmt.Sprintf(f, v...)
-		b.Fatalf("%s\n%s", s, Stack())
+		b.Fatalf(Stack())
 	}
 }
 

@@ -1,9 +1,8 @@
 package ext
 
 import (
-	//"math/rand"
 	"runtime"
-	//"sync"
+	"sync"
 	"testing"
 )
 
@@ -36,57 +35,87 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 }
 
-// func BenchmarkMapParallel(b *testing.B) {
-// 	m := make(map[string]bool)
-// 	var wg sync.WaitGroup
-// 	wg.Add(3)
+func TestChanMap(t *testing.T) {
+	m := NewChanMap()
 
-// 	go func() {
-// 		defer wg.Done()
-// 		for {
-// 			m[string(rand.Int())] = true
-// 		}
-// 	}()
+	AssertT(t, m.Set(10, 100))
+	v, ok := m.Get(10).(int)
+	AssertT(t, ok && v == 100)
+	AssertT(t, m.Delete(10))
+	AssertT(t, m.Get(10) == nil)
+}
 
-// 	go func() {
-// 		defer wg.Done()
-// 		for {
-// 			if m[string(rand.Int())] {
+func benchmarkParallelMap(b *testing.B, m Map) {
+	var wg sync.WaitGroup
+	wg.Add(3)
 
-// 			}
-// 		}
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b.N; i++ {
+			m.Set(string(RandomUint64()), true)
+		}
+		//AssertB(b, m.Len() == b.N)
+	}()
 
-// 	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b.N; i++ {
+			v := m.Get(string(RandomUint64()))
+			if v == nil {
+			}
+		}
 
-// 	go func() {
-// 		defer wg.Done()
-// 		for {
-// 			delete(m, string(rand.Int()))
-// 		}
+	}()
 
-// 	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b.N; i++ {
+			m.Delete(string(RandomUint64()))
+		}
 
-// 	wg.Wait()
-// }
+	}()
 
-// func BenchmarkMapParallelSet(b *testing.B) {
-// 	m := make(uint64BoolMap)
+	wg.Wait()
+}
 
-// 	b.RunParallel(func(pb *testing.PB) {
-// 		for pb.Next() {
-// 			m[ext.RandomUint64()] = true
-// 		}
-// 	})
-// }
+func benchmarkMapSet(b *testing.B, m Map) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			AssertB(b, m.Set(RandomUint64(), true))
+		}
+	})
+}
 
-// func BenchmarkMapParallelGet(b *testing.B) {
-// 	m := make(uint64BoolMap)
+func benchmarkMapGet(b *testing.B, m Map) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m.Get(RandomUint64())
+		}
+	})
+}
 
-// 	b.RunParallel(func(pb *testing.PB) {
-// 		// Each goroutine has its own bytes.Buffer.
-// 		for pb.Next() {
-// 			_, ok := m[ext.RandomUint64()]
-// 			ext.Assert(ok == false)
-// 		}
-// 	})
-// }
+func benchmarkMapDelete(b *testing.B, m Map) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			AssertB(b, m.Delete(RandomUint64()))
+		}
+	})
+}
+
+func BenchmarkChanMap(b *testing.B) {
+	benchmarkParallelMap(b, NewChanMap())
+}
+func BenchmarkChanMapSet(b *testing.B) {
+	m := NewChanMap()
+	benchmarkMapSet(b, m)
+}
+
+func BenchmarkChanMapGet(b *testing.B) {
+	m := NewChanMap()
+	benchmarkMapGet(b, m)
+}
+
+func BenchmarkChanMapDelete(b *testing.B) {
+	m := NewChanMap()
+	benchmarkMapDelete(b, m)
+}
