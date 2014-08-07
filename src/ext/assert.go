@@ -24,6 +24,13 @@ func AssertT(t *testing.T, condition bool, f string, v ...interface{}) {
 	}
 }
 
+func AssertB(b *testing.B, condition bool, f string, v ...interface{}) {
+	if !condition {
+		s := fmt.Sprintf(f, v...)
+		b.Fatalf("%s\n%s", s, Stack())
+	}
+}
+
 func TestingAssert(t *testing.T, condition bool, err error) {
 	if !condition {
 		if err != nil {
