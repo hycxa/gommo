@@ -1,7 +1,6 @@
-package concurrent
+package ext
 
 import (
-	"ext"
 	//"math/rand"
 	"runtime"
 	//"sync"
@@ -33,7 +32,7 @@ func BenchmarkMapGet(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ext.Assert(m[i])
+		Assert(m[i])
 	}
 }
 
