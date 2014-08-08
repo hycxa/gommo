@@ -1,25 +1,31 @@
 package ext
 
 import (
+	"math/rand"
 	"runtime"
-	"sync"
 	"testing"
 	"time"
 )
 
 // ChanMap size is 0, LockMap use RWMutex
-// BenchmarkRandomUint64-4	 1000000	      1428 ns/op
-// BenchmarkRandomInt64-4	 1000000	      1476 ns/op
-// BenchmarkMapSet-4	10000000	       158 ns/op
-// BenchmarkMapGet-4	50000000	        55.1 ns/op
-// BenchmarkChanMap-4	  500000	      2732 ns/op
-// BenchmarkChanMapSet-4	 5000000	       665 ns/op
-// BenchmarkChanMapGet-4	 5000000	       741 ns/op
-// BenchmarkChanMapDelete-4	 5000000	       581 ns/op
-// BenchmarkLockMap-4	  500000	      3022 ns/op
-// BenchmarkLockMapSet-4	 5000000	       665 ns/op
-// BenchmarkLockMapGet-4	20000000	        92.9 ns/op
-// BenchmarkLockMapDelete-4	 5000000	       543 ns/op
+// BenchmarkRandomUint64-4	 1000000	      1420 ns/op
+// BenchmarkRandomInt64-4	 1000000	      1445 ns/op
+// BenchmarkMapSet-4	10000000	       154 ns/op
+// BenchmarkMapGet-4	50000000	        53.9 ns/op
+// BenchmarkChanMap-4	 2000000	       857 ns/op
+// BenchmarkChanMapSet-4	 2000000	       774 ns/op
+// BenchmarkChanMapGet-4	 5000000	       735 ns/op
+// BenchmarkChanMapDelete-4	 5000000	       579 ns/op
+// BenchmarkLockMap-4	 5000000	       300 ns/op
+// BenchmarkLockMapSet-4	 5000000	       661 ns/op
+// BenchmarkLockMapGet-4	20000000	        94.3 ns/op
+// BenchmarkLockMapDelete-4	 5000000	       544 ns/op
+//
+// LockMap use Mutex
+// BenchmarkLockMap-4	 5000000	       632 ns/op
+// BenchmarkLockMapSet-4	 5000000	       622 ns/op
+// BenchmarkLockMapGet-4	 5000000	       409 ns/op
+// BenchmarkLockMapDelete-4	 5000000	       501 ns/op
 
 var (
 	maxprocs          = runtime.GOMAXPROCS(4)
@@ -101,45 +107,21 @@ func TestLockMap(t *testing.T) {
 }
 
 func benchmarkParallelMap(b *testing.B, m ParallelMap) {
-	var wg sync.WaitGroup
-	wg.Add(4)
 	initParallelMap(m)
 
 	b.ResetTimer()
-	go func() {
-		defer wg.Done()
-		for i := 0; i < b.N; i++ {
-			m.Set(initDatas[i%constInitDataSize], true)
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		for i := 0; i < b.N; i++ {
-			v := m.Get(initDatas[i%constInitDataSize])
-			if v == nil {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			r := rand.Intn(1020)
+			if r < 10 {
+				m.Set(initDatas[time.Now().Nanosecond()%constInitDataSize], true)
+			} else if r < 20 {
+				m.Delete(initDatas[time.Now().Nanosecond()%constInitDataSize])
+			} else {
+				m.Get(initDatas[time.Now().Nanosecond()%constInitDataSize])
 			}
 		}
-
-	}()
-
-	go func() {
-		defer wg.Done()
-		for i := 0; i < b.N; i++ {
-			m.Delete(initDatas[i%constInitDataSize])
-		}
-
-	}()
-
-	go func() {
-		defer wg.Done()
-		for i := 0; i < b.N; i++ {
-			m.Len()
-		}
-
-	}()
-
-	wg.Wait()
+	})
 }
 
 func benchmarkMapSet(b *testing.B, m ParallelMap) {
