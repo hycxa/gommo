@@ -6,7 +6,7 @@ import (
 
 type lockMap struct {
 	m     map[interface{}]interface{}
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 func NewLockMap() ParallelMap {
@@ -23,8 +23,8 @@ func (l *lockMap) Set(k, v interface{}) bool {
 }
 
 func (l *lockMap) Get(k interface{}) interface{} {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	l.mutex.RLock()
+	defer l.mutex.RUnlock()
 
 	v, ok := l.m[k]
 	if ok {
