@@ -75,9 +75,13 @@ func TestLockMap(t *testing.T) {
 	testParallelMap(t, NewLockMap())
 }
 
+func TestLockFreeMap(t *testing.T) {
+	testParallelMap(t, NewLockFreeMap())
+}
+
 func benchmarkParallelMap(b *testing.B, m ParallelMap) {
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 	initParallelMap(m)
 
 	b.ResetTimer()
@@ -102,6 +106,14 @@ func benchmarkParallelMap(b *testing.B, m ParallelMap) {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			m.Delete(string(RandomUint64()))
+		}
+
+	}()
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b.N; i++ {
+			m.Len()
 		}
 
 	}()
