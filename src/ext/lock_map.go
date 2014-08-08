@@ -15,11 +15,10 @@ func NewLockMap() ParallelMap {
 	return &l
 }
 
-func (l *lockMap) Set(k, v interface{}) bool {
+func (l *lockMap) Set(k, v interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	l.m[k] = v
-	return true
 }
 
 func (l *lockMap) Get(k interface{}) interface{} {
@@ -34,11 +33,10 @@ func (l *lockMap) Get(k interface{}) interface{} {
 	}
 }
 
-func (l *lockMap) Delete(k interface{}) bool {
+func (l *lockMap) Delete(k interface{}) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	delete(l.m, k)
-	return true
 }
 
 func (l *lockMap) Len() int {

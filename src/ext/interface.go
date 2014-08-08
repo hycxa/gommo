@@ -1,10 +1,8 @@
 package ext
 
 type ParallelMap interface {
-	Set(k, v interface{}) bool
+	Set(k, v interface{})
 	Get(k interface{}) interface{}
-	Delete(k interface{}) bool
+	Delete(k interface{})
 	Len() int
-
-	//DirtySet	after DirtySet Get maybe not get value
 }

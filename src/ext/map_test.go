@@ -7,25 +7,19 @@ import (
 	"time"
 )
 
-// ChanMap size is 0, LockMap use Mutex
-// BenchmarkRandomUint64-4	 1000000	      1530 ns/op
-// BenchmarkRandomInt64-4	 1000000	      1394 ns/op
-// BenchmarkMapSet-4	10000000	       152 ns/op
-// BenchmarkMapGet-4	50000000	        53.6 ns/op
-// BenchmarkChanMap-4	  500000	      3297 ns/op
-// BenchmarkChanMapSet-4	 1000000	      1012 ns/op
-// BenchmarkChanMapGet-4	 5000000	       732 ns/op
-// BenchmarkChanMapDelete-4	 5000000	       794 ns/op
-// BenchmarkLockMap-4	 1000000	      1436 ns/op
-// BenchmarkLockMapSet-4	 5000000	       628 ns/op
-// BenchmarkLockMapGet-4	 5000000	       413 ns/op
-// BenchmarkLockMapDelete-4	 5000000	       515 ns/op
-//
-// LockMap use RWMutex, total down, read up 4
-// BenchmarkLockMap-4	  500000	      3125 ns/op
-// BenchmarkLockMapSet-4	 5000000	       670 ns/op
+// ChanMap size is 0, LockMap use RWMutex
+// BenchmarkRandomUint64-4	 1000000	      1428 ns/op
+// BenchmarkRandomInt64-4	 1000000	      1476 ns/op
+// BenchmarkMapSet-4	10000000	       158 ns/op
+// BenchmarkMapGet-4	50000000	        55.1 ns/op
+// BenchmarkChanMap-4	  500000	      2732 ns/op
+// BenchmarkChanMapSet-4	 5000000	       665 ns/op
+// BenchmarkChanMapGet-4	 5000000	       741 ns/op
+// BenchmarkChanMapDelete-4	 5000000	       581 ns/op
+// BenchmarkLockMap-4	  500000	      3022 ns/op
+// BenchmarkLockMapSet-4	 5000000	       665 ns/op
 // BenchmarkLockMapGet-4	20000000	        92.9 ns/op
-// BenchmarkLockMapDelete-4	 5000000	       553 ns/op
+// BenchmarkLockMapDelete-4	 5000000	       543 ns/op
 
 var (
 	maxprocs          = runtime.GOMAXPROCS(4)
@@ -80,10 +74,10 @@ func testParallelMap(t *testing.T, m ParallelMap) {
 	initParallelMap(m)
 
 	test := func(k, v interface{}) {
-		AssertT(t, m.Set(k, v))
+		m.Set(k, v)
 		ret, ok := m.Get(k).(uint64)
 		AssertT(t, ok && v == ret)
-		AssertT(t, m.Delete(k))
+		m.Delete(k)
 		AssertT(t, m.Get(k) == nil)
 	}
 
@@ -99,7 +93,7 @@ func testParallelMap(t *testing.T, m ParallelMap) {
 }
 
 func TestChanMap(t *testing.T) {
-	testParallelMap(t, newChanMap())
+	testParallelMap(t, NewChanMap())
 }
 
 func TestLockMap(t *testing.T) {
@@ -154,7 +148,7 @@ func benchmarkMapSet(b *testing.B, m ParallelMap) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			AssertB(b, m.Set(time.Now().Nanosecond()%constInitDataSize, true))
+			m.Set(time.Now().Nanosecond()%constInitDataSize, true)
 		}
 	})
 }
@@ -176,28 +170,24 @@ func benchmarkMapDelete(b *testing.B, m ParallelMap) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			AssertB(b, m.Delete(initDatas[time.Now().Nanosecond()%constInitDataSize]))
+			m.Delete(initDatas[time.Now().Nanosecond()%constInitDataSize])
 		}
 	})
 }
 
-func newChanMap() ParallelMap {
-	return NewChanMap(true)
-}
-
 func BenchmarkChanMap(b *testing.B) {
-	benchmarkParallelMap(b, newChanMap())
+	benchmarkParallelMap(b, NewChanMap())
 }
 func BenchmarkChanMapSet(b *testing.B) {
-	benchmarkMapSet(b, newChanMap())
+	benchmarkMapSet(b, NewChanMap())
 }
 
 func BenchmarkChanMapGet(b *testing.B) {
-	benchmarkMapGet(b, newChanMap())
+	benchmarkMapGet(b, NewChanMap())
 }
 
 func BenchmarkChanMapDelete(b *testing.B) {
-	benchmarkMapDelete(b, newChanMap())
+	benchmarkMapDelete(b, NewChanMap())
 }
 
 func BenchmarkLockMap(b *testing.B) {

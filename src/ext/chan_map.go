@@ -19,27 +19,18 @@ type cmdInfo struct {
 type chanMap struct {
 	m       map[interface{}]interface{}
 	cmdChan chan cmdInfo // get chan
-	sync    bool
 }
 
-func NewChanMap(sync bool) ParallelMap {
+func NewChanMap() ParallelMap {
 	c := chanMap{}
 	c.m = make(map[interface{}]interface{})
 	c.cmdChan = make(chan cmdInfo)
-	c.sync = sync
 	go c.runCmd()
 	return &c
 }
 
-func (c *chanMap) Set(k, v interface{}) bool {
-	if c.sync {
-		ret := make(chan interface{}, 1)
-		c.pushCmd(constCmdSet, k, v, ret)
-		return (<-ret).(bool)
-	} else {
-		c.pushCmd(constCmdSet, k, v, nil)
-		return true
-	}
+func (c *chanMap) Set(k, v interface{}) {
+	c.pushCmd(constCmdSet, k, v, nil)
 }
 
 func (c *chanMap) Get(k interface{}) interface{} {
@@ -48,15 +39,8 @@ func (c *chanMap) Get(k interface{}) interface{} {
 	return <-ret
 }
 
-func (c *chanMap) Delete(k interface{}) bool {
-	if c.sync {
-		ret := make(chan interface{}, 1)
-		c.pushCmd(constCmdDelete, k, nil, ret)
-		return (<-ret).(bool)
-	} else {
-		c.pushCmd(constCmdDelete, k, nil, nil)
-		return true
-	}
+func (c *chanMap) Delete(k interface{}) {
+	c.pushCmd(constCmdDelete, k, nil, nil)
 }
 
 func (c *chanMap) Len() int {
@@ -70,17 +54,14 @@ func (c *chanMap) pushCmd(cmd int, k, v interface{}, ret chan interface{}) {
 func (c *chanMap) runCmd() {
 	for {
 		ci := <-c.cmdChan
-		if c.sync && ci.ret == nil {
-			return
-		}
 
 		switch ci.cmd {
 		case constCmdDelete:
 			delete(c.m, ci.k)
-			if c.sync && ci.ret != nil {
-				ci.ret <- true
-			}
 		case constCmdGet:
+			if ci.ret == nil {
+				return
+			}
 			v, ok := c.m[ci.k]
 			if ok {
 				ci.ret <- v
@@ -89,9 +70,6 @@ func (c *chanMap) runCmd() {
 			}
 		case constCmdSet:
 			c.m[ci.k] = ci.v
-			if c.sync && ci.ret != nil {
-				ci.ret <- true
-			}
 		}
 	}
 }
