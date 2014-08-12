@@ -60,7 +60,6 @@ func LogInfo(format string, v ...interface{}) {
 }
 
 func LogError(err error) error {
-	el.Printf(err.Error())
-	el.Print(Stack())
+	el.Printf("%s\n%s", err.Error(), Stack())
 	return err
 }

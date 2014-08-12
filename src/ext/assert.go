@@ -1,18 +1,19 @@
 package ext
 
 import (
+	"errors"
 	"testing"
 )
 
 func Assert(condition bool) {
 	if !condition {
-		panic(Stack())
+		panic(errors.New(""))
 	}
 }
 
 func AssertE(err error) {
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 }
 
