@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"ext"
 	"net"
+	"time"
 )
 
 type nodeSender struct {
@@ -18,12 +19,17 @@ type nodeSender struct {
 
 func NewNodeSender(conn net.Conn, encode Encode, compress Compress) Runner {
 	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, runner: NewRunner(), outgoing: NewMessageQueue(32)}
-	go s.Run()
 	return s
 }
 
 func (s *nodeSender) Run() {
 	defer s.Stopped()
+
+	if RELEASE {
+		ext.AssertE(s.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second)))
+	}
+	WriteBytes(s.Conn, GobEncode(MyInfo()))
+
 	for !s.StopRequested() {
 		source, target, msg := s.outgoing.Pop()
 		data := s.Encode(msg)
@@ -41,9 +47,10 @@ func (s *nodeSender) Run() {
 		if s.Compress != nil {
 			data = s.Compress(buf.Bytes())
 		}
-		var bufSize []byte
-		BYTE_ORDER.PutUint32(bufSize, uint32(len(data)))
-		s.Conn.Write(bufSize)
-		s.Conn.Write(data)
+
+		if RELEASE {
+			ext.AssertE(s.Conn.SetWriteDeadline(time.Now().Add(time.Minute)))
+		}
+		WriteBytes(s.Conn, data)
 	}
 }

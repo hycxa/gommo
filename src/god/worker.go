@@ -1,11 +1,15 @@
 package god
 
+import (
+	"ext"
+)
+
 var (
 	workers = make(map[PID]Worker)
 )
 
 func NewWorker(r Runner) Worker {
-	go r.Run()
+	go ext.PCall(r.Run)
 
 	return &worker{Runner: r, pid: 0}
 }

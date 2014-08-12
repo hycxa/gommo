@@ -1,14 +1,26 @@
 package god
 
-import ()
-
-var (
-	nodes         = make(map[PID]NodeSender)
-	nodeConnector Connector
-	nodeAcceptor  Worker
+import (
+	"ext"
 )
 
-func init() {
+type nodeInfo struct {
+	Cookie string
+	ID     NID
+}
+
+const (
+	RELEASE = true
+)
+
+var (
+	nodes         = make(map[NID]interface{})
+	nodeConnector Connector
+	nodeAcceptor  Worker
+	myInfo        nodeInfo
+)
+
+func regCmd() {
 	Console().RegCmdFunc("dial", dial)
 	Console().RegCmdFunc("nodes", listNodes)
 	Console().RegCmdFunc("q", quit)
@@ -18,6 +30,13 @@ func init() {
 func StartNode(listenStr string) {
 	nodeAcceptor = NewWorker(NewAcceptor(listenStr, NewNodeAgent))
 	nodeConnector = NewConnector(NewNodeAgent)
+	myInfo = nodeInfo{Cookie: "THIS_IS_A_COOKIE", ID: GenerateNID()}
+	ext.LogInfo("MY_INFO\t%v", myInfo)
+	regCmd()
+}
+
+func MyInfo() nodeInfo {
+	return myInfo
 }
 
 func Quit() {
@@ -55,8 +74,8 @@ func Cast(source PID, target PID, message Message) {
 	}
 }
 
-func AddNode(pid PID, nodeSender NodeSender) {
-	nodes[pid] = nodeSender
+func AddNode(id NID, node interface{}) {
+	nodes[id] = node
 }
 
 func dial(args []string) interface{} {

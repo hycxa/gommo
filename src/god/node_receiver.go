@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"ext"
-	"io"
 	"net"
+	"time"
 )
 
 type nodeReceiver struct {
@@ -14,6 +14,7 @@ type nodeReceiver struct {
 	Decompress
 
 	*runner
+	nodeInfo
 }
 
 func NewNodeReceiver(conn net.Conn, decode Decode, decompress Decompress) Runner {
@@ -24,18 +25,26 @@ func (r *nodeReceiver) Run() {
 	defer r.Stopped()
 	defer r.Conn.Close()
 
-	ext.LogDebug("ESTABLISHED\tLOCAL\t%s\tREMOTE\t%s", r.LocalAddr().String(), r.RemoteAddr().String())
-	header := make([]byte, 4)
+	if RELEASE {
+		ext.AssertE(r.Conn.SetReadDeadline(time.Now().Add(10 * time.Second)))
+	}
+	infoData := ReadBytes(r.Conn)
+
+	var info nodeInfo
+	GobDecode(infoData, &info)
+
+	ext.Assert(info.Cookie == MyInfo().Cookie)
+	ext.Assert(info.ID != MyInfo().ID)
+
+	r.nodeInfo = info
+	AddNode(r.ID, r.nodeInfo)
+	ext.LogDebug("ESTABLISHED\tLOCAL\t%s\tREMOTE\t%s\tINFO\t%v", r.LocalAddr().String(), r.RemoteAddr().String(), r.nodeInfo)
 
 	for !r.StopRequested() {
-		//r.Conn.SetReadDeadline(time.Now().Add(time.Minute))
-		_, err := io.ReadFull(r.Conn, header)
-		ext.AssertE(err)
-
-		data := make([]byte, BYTE_ORDER.Uint32(header))
-		_, err = io.ReadFull(r.Conn, data)
-		ext.AssertE(err)
-
+		if RELEASE {
+			ext.AssertE(r.Conn.SetReadDeadline(time.Now().Add(time.Minute)))
+		}
+		data := ReadBytes(r.Conn)
 		if r.Decompress != nil {
 			data = r.Decompress(data)
 		}
