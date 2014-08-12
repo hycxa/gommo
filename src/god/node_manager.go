@@ -10,7 +10,7 @@ type nodeInfo struct {
 }
 
 const (
-	RELEASE = true
+	RELEASE = false
 )
 
 var (
