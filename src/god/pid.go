@@ -1,16 +1,16 @@
 package god
 
 import (
-	"crypto/rand"
 	"ext"
-	"math"
-	"math/big"
 )
 
 type PID uint64
+type NID uint64
 
 func GeneratePID() PID {
-	n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	ext.AssertE(err)
-	return PID(n.Uint64())
+	return PID(ext.RandomUint64())
+}
+
+func GenerateNID() NID {
+	return NID(ext.RandomUint64())
 }
