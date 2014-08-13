@@ -5,27 +5,18 @@ import (
 )
 
 type clientHandler struct {
-	god.Stopper
-	god.Handler
+	*god.HandlerBase
 }
 
-func NewClientHandler(sender god.PID) god.Runner {
-	self := &clientHandler{Handler: god.NewHandler(0), Stopper: god.NewRunner()}
+func NewClientHandler(id god.PID) god.Handler {
+	self := &clientHandler{HandlerBase: god.NewHandlerBase(id)}
 	return self
 }
 
-func (c *clientHandler) Handle(source god.PID, m *god.Message) {
+func (c *clientHandler) Handle(source god.PID, msg god.Message) {
 
 }
 
-func (c *clientHandler) BeforeOutgoing(target god.PID, m *god.Message) {
+func (c *clientHandler) BeforeSend(target god.PID, msg god.Message) {
 
-}
-
-func (c *clientHandler) Run() {
-	// for {
-	// 	handler.Handle()
-	// 	handler.outgoing
-	// }
-	defer c.Stopped()
 }

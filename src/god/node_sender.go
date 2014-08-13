@@ -13,12 +13,13 @@ type nodeSender struct {
 	Encode
 	Compress
 
-	*runner
-	outgoing MessageQueue
+	*stopper
+	MessageQueue
 }
 
-func NewNodeSender(conn net.Conn, encode Encode, compress Compress) Runner {
-	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, runner: NewRunner(), outgoing: NewMessageQueue(32)}
+func NewNodeSender(conn net.Conn, encode Encode, compress Compress) MessageQueue {
+	s := &nodeSender{Conn: conn, Encode: encode, Compress: compress, stopper: NewStopper(), MessageQueue: NewMessageQueue(32)}
+	go ext.PCall(s.Run)
 	return s
 }
 
@@ -31,7 +32,7 @@ func (s *nodeSender) Run() {
 	WriteBytes(s.Conn, GobEncode(MyInfo()))
 
 	for !s.StopRequested() {
-		source, target, msg := s.outgoing.Pop()
+		source, target, msg := s.Pop()
 		data := s.Encode(msg)
 		ext.Assert(data != nil)
 

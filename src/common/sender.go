@@ -9,8 +9,8 @@ type sender struct {
 	god.Stopper
 }
 
-func NewSender(conn net.Conn, encode god.Encode, compress god.Compress, encrypt god.Encrypt) god.Runner {
-	return &sender{Stopper: god.NewRunner()}
+func NewSender(conn net.Conn, encode god.Encode, compress god.Compress, encrypt god.Encrypt) god.Stopper {
+	return &sender{Stopper: god.NewStopper()}
 }
 
 func (s *sender) Run() {

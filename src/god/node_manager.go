@@ -16,7 +16,7 @@ const (
 var (
 	nodes         = make(map[NID]interface{})
 	nodeConnector Connector
-	nodeAcceptor  Worker
+	nodeAcceptor  Stopper
 	myInfo        nodeInfo
 )
 
@@ -28,7 +28,7 @@ func regCmd() {
 }
 
 func StartNode(listenStr string) {
-	nodeAcceptor = NewWorker(NewAcceptor(listenStr, NewNodeAgent))
+	nodeAcceptor = NewAcceptor(listenStr, NewNodeAgent)
 	nodeConnector = NewConnector(NewNodeAgent)
 	myInfo = nodeInfo{Cookie: "THIS_IS_A_COOKIE", ID: GenerateNID()}
 	ext.LogInfo("MY_INFO\t%v", myInfo)
@@ -42,9 +42,6 @@ func MyInfo() nodeInfo {
 func Quit() {
 	if nodeAcceptor != nil {
 		nodeAcceptor.Stop()
-	}
-	if nodeConnector != nil {
-		nodeConnector.Stop()
 	}
 	Console().Stop()
 }

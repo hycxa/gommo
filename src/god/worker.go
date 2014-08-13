@@ -8,22 +8,33 @@ var (
 	workers = make(map[PID]Worker)
 )
 
-func NewWorker(r Runner) Worker {
-	go ext.PCall(r.Run)
-
-	return &worker{Runner: r, pid: 0}
-}
-
 type worker struct {
-	MessageQueue
-	Runner
-	pid PID
+	PID
+	Handler
+	Stopper
 }
 
-func (w *worker) PID() PID {
-	return w.pid
+func NewWorker(id PID, h Handler) Worker {
+	w := &worker{PID: id, Handler: h, Stopper: NewStopper()}
+	go ext.PCall(w.run)
+	return w
 }
 
 func (w *worker) Cast(source PID, msg Message) {
-	w.Push(source, w.pid, msg)
+	w.Push(source, w.PID, msg)
+}
+
+func (w *worker) run() {
+	defer w.Stopped()
+	for !w.StopRequested() {
+		source, target, msg := w.Pop()
+		ext.Assert(source != target)
+		// send to others
+		if source == w.PID {
+			w.BeforeSend(target, msg)
+			w.Push(source, target, msg)
+		} else {
+			w.Handle(source, msg)
+		}
+	}
 }

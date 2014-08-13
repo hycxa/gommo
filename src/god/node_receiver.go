@@ -13,12 +13,14 @@ type nodeReceiver struct {
 	Decode
 	Decompress
 
-	*runner
+	*stopper
 	nodeInfo
 }
 
-func NewNodeReceiver(conn net.Conn, decode Decode, decompress Decompress) Runner {
-	return &nodeReceiver{Conn: conn, Decode: decode, Decompress: decompress, runner: NewRunner()}
+func NewNodeReceiver(conn net.Conn, decode Decode, decompress Decompress) Stopper {
+	r := &nodeReceiver{Conn: conn, Decode: decode, Decompress: decompress, stopper: NewStopper()}
+	go ext.PCall(r.Run)
+	return r
 }
 
 func (r *nodeReceiver) Run() {

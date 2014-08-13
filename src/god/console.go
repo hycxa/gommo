@@ -19,12 +19,12 @@ type cmdFunc func([]string) interface{}
 type cmdFuncMap map[string]cmdFunc
 
 type console struct {
-	*runner
+	*stopper
 	funcs cmdFuncMap
 }
 
 var (
-	cons = &console{funcs: make(cmdFuncMap), runner: NewRunner()}
+	cons = &console{funcs: make(cmdFuncMap), stopper: NewStopper()}
 )
 
 func Console() *console {

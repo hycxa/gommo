@@ -32,5 +32,4 @@ func main() {
 	}
 
 	god.Console().Run()
-	connector.Stop()
 }

@@ -6,12 +6,9 @@ import (
 	"net"
 )
 
-func NewRobotAgent(workers god.WorkerMap, conn net.Conn) {
-	s := god.NewWorker(common.NewSender(conn, god.DefaultEncode, nil, nil))
-	h := god.NewWorker(NewRobotHandler(s.PID()))
-	r := god.NewWorker(common.NewReceiver(conn, h.PID(), god.DefaultDecode, nil, nil))
-
-	workers[s.PID()] = s
-	workers[h.PID()] = h
-	workers[r.PID()] = r
+func NewRobotAgent(conn net.Conn) {
+	common.NewSender(conn, god.DefaultEncode, nil, nil)
+	id := god.GeneratePID()
+	h := god.NewWorker(id, NewRobotHandler(id))
+	common.NewReceiver(conn, h.ID(), god.DefaultDecode, nil, nil)
 }

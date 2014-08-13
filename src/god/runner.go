@@ -6,16 +6,16 @@ import (
 	"time"
 )
 
-type runner struct {
+type stopper struct {
 	stopped       chan bool
 	stopRequested bool
 }
 
-func NewRunner() *runner {
-	return &runner{stopped: make(chan bool, 1), stopRequested: false}
+func NewStopper() *stopper {
+	return &stopper{stopped: make(chan bool, 1), stopRequested: false}
 }
 
-func (r *runner) Stop() {
+func (r *stopper) Stop() {
 	r.stopRequested = true
 	timeout := make(chan bool)
 	go func() {
@@ -30,10 +30,10 @@ func (r *runner) Stop() {
 	}
 }
 
-func (r *runner) StopRequested() bool {
+func (r *stopper) StopRequested() bool {
 	return r.stopRequested
 }
 
-func (r *runner) Stopped() {
+func (r *stopper) Stopped() {
 	r.stopped <- true
 }

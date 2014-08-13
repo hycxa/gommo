@@ -34,7 +34,7 @@ func main() {
 		ext.TraceSwitch = true
 	}
 	god.StartNode(listenString)
-	acceptor := god.NewWorker(god.NewAcceptor(agentString, NewClientAgent))
+	acceptor := god.NewAcceptor(agentString, NewClientAgent)
 
 	if noshell {
 		c := make(chan os.Signal)

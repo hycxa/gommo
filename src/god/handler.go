@@ -1,25 +1,19 @@
 package god
 
 import (
-// "ext"
+	"ext"
 )
 
-type handler struct {
+type HandlerBase struct {
 	PID
-	incoming MessageQueue
-	outgoing MessageQueue
+	MessageQueue
 }
 
-func NewHandler(self PID) *handler {
-	return &handler{PID: self}
+func NewHandlerBase(id PID) *HandlerBase {
+	return &HandlerBase{PID: id, MessageQueue: NewMessageQueue(32)}
 }
 
-func (h *handler) Send(target PID, m *Message) {
-	h.outgoing.Push(h.PID, target, m)
-}
-
-func (h *handler) Handle() {
-	// source, target, message := h.incoming.Pop()
-	// ext.Assert(target == h.PID)
-	// h.Handle(source, message)
+func (h *HandlerBase) SendOut(target PID, msg Message) {
+	ext.Assert(h.PID != target)
+	h.Push(h.PID, target, msg)
 }

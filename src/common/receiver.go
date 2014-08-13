@@ -10,8 +10,8 @@ type receiver struct {
 	handlerID god.PID
 }
 
-func NewReceiver(conn net.Conn, handlerID god.PID, decode god.Decode, decompress god.Decompress, decrypt god.Decrypt) god.Runner {
-	return &receiver{handlerID: handlerID, Stopper: god.NewRunner()}
+func NewReceiver(conn net.Conn, handlerID god.PID, decode god.Decode, decompress god.Decompress, decrypt god.Decrypt) god.Stopper {
+	return &receiver{handlerID: handlerID, Stopper: god.NewStopper()}
 }
 
 func (r *receiver) Run() {
